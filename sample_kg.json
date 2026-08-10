@@ -1,0 +1,133 @@
+{
+  "nodes": [
+    {
+      "id": "192.168.1.100",
+      "value": "192.168.1.100",
+      "source_report": "report_001",
+      "entity_type": "ipv4_address",
+      "normalized_type": "ip"
+    },
+    {
+      "id": "c2.hiddenadapter.com",
+      "value": "c2.hiddenadapter.com",
+      "source_report": "report_001",
+      "entity_type": "domain",
+      "normalized_type": "domain"
+    },
+    {
+      "id": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "value": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "source_report": "report_001",
+      "entity_type": "sha256_hash",
+      "normalized_type": "hash"
+    },
+    {
+      "id": "cve-2023-12345",
+      "value": "cve-2023-12345",
+      "source_report": "report_001",
+      "entity_type": "cve",
+      "normalized_type": "vulnerability"
+    },
+    {
+      "id": "trojan.hiddenadapter",
+      "value": "trojan.hiddenadapter",
+      "source_report": "report_001",
+      "entity_type": "malware",
+      "normalized_type": "malware"
+    },
+    {
+      "id": "hiddenadapter",
+      "value": "hiddenadapter",
+      "source_report": "report_001",
+      "entity_type": "malware",
+      "normalized_type": "malware"
+    },
+    {
+      "id": "apt29",
+      "value": "apt29",
+      "source_report": "report_001",
+      "entity_type": "threat_actor",
+      "normalized_type": "actor"
+    },
+    {
+      "id": "TA0011",
+      "name": "Command and Control",
+      "value": "Command and Control",
+      "source_report": "report_001",
+      "entity_type": "attack_tactic",
+      "normalized_type": "tactic"
+    },
+    {
+      "id": "command-line",
+      "value": "command-line",
+      "source_report": "report_002",
+      "entity_type": "malware",
+      "normalized_type": "malware"
+    },
+    {
+      "id": "T1566",
+      "name": "Phishing",
+      "value": "Phishing",
+      "source_report": "report_002",
+      "entity_type": "attack_technique",
+      "normalized_type": "technique"
+    },
+    {
+      "id": "T1078",
+      "name": "Valid Accounts",
+      "value": "Valid Accounts",
+      "source_report": "report_002",
+      "entity_type": "attack_technique",
+      "normalized_type": "technique"
+    },
+    {
+      "id": "T1059",
+      "name": "Command and Scripting Interpreter",
+      "value": "Command and Scripting Interpreter",
+      "source_report": "report_002",
+      "entity_type": "attack_technique",
+      "normalized_type": "technique"
+    },
+    {
+      "id": "T1055",
+      "name": "Process Injection",
+      "value": "Process Injection",
+      "source_report": "report_002",
+      "entity_type": "attack_technique",
+      "normalized_type": "technique"
+    },
+    {
+      "id": "T1041",
+      "name": "Exfiltration Over C2 Channel",
+      "value": "Exfiltration Over C2 Channel",
+      "source_report": "report_002",
+      "entity_type": "attack_technique",
+      "normalized_type": "technique"
+    },
+    {
+      "id": "TA0001",
+      "name": "Initial Access",
+      "value": "Initial Access",
+      "source_report": "report_002",
+      "entity_type": "attack_tactic",
+      "normalized_type": "tactic"
+    },
+    {
+      "id": "TA0005",
+      "name": "Defense Evasion",
+      "value": "Defense Evasion",
+      "source_report": "report_002",
+      "entity_type": "attack_tactic",
+      "normalized_type": "tactic"
+    },
+    {
+      "id": "TA0010",
+      "name": "Exfiltration",
+      "value": "Exfiltration",
+      "source_report": "report_002",
+      "entity_type": "attack_tactic",
+      "normalized_type": "tactic"
+    }
+  ],
+  "edges": []
+}

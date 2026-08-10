@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTI Analysis | Threat Intelligence Dashboard</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- D3 & TopoJSON for Map -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
+    <!-- 3D Force Graph -->
+    <script src="https://unpkg.com/3d-force-graph"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=101) }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-shield-halved logo-icon"></i>
+                <div class="logo-text">
+                    <h2>CTI ANALYSIS</h2>
+                    <span>Threat Intelligence Dashboard</span>
+                </div>
+            </div>
+            
+            <button id="open-analyzer-btn" class="btn-primary">
+                <i class="fa-solid fa-microchip"></i> Analyze Report
+            </button>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active"><i class="fa-solid fa-house"></i> Dashboard</li>
+                    <li><i class="fa-solid fa-file-shield"></i> Threat Reports</li>
+                    <li><i class="fa-solid fa-fingerprint"></i> IOCs</li>
+                    <li><i class="fa-solid fa-user-secret"></i> Threat Actors</li>
+                    <li><i class="fa-solid fa-bug"></i> Malware</li>
+                    <li><i class="fa-solid fa-shield-virus"></i> Vulnerabilities (CVE)</li>
+                    <li><i class="fa-solid fa-network-wired"></i> MITRE ATT&CK</li>
+                    <li><i class="fa-solid fa-circle-nodes"></i> Knowledge Graph</li>
+                    <li><i class="fa-solid fa-bell"></i> Alerts</li>
+                    <li><i class="fa-solid fa-file-lines"></i> Reports</li>
+                    <li><i class="fa-solid fa-gear"></i> Settings</li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-box">
+                    <span class="status-title">System Status</span>
+                    <span class="status-badge"><i class="fa-solid fa-check-circle"></i> Operational</span>
+                </div>
+                <div class="update-box">
+                    <span>Data Sources</span>
+                    <span class="highlight">12 / 12 Connected</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="global-search" placeholder="Search for IOCs, Threat Actors, Malware, CVEs..." autocomplete="off">
+                    <div id="search-dropdown" class="search-dropdown" style="display:none;"></div>
+                </div>
+                <div class="topbar-actions">
+                    <!-- Date Picker -->
+                    <div class="date-picker" id="date-picker-btn">
+                        <i class="fa-regular fa-calendar"></i>
+                        <span id="date-range-label">01 May 2026 - 31 May 2026</span>
+                        <div id="date-picker-dropdown" class="topbar-dropdown" style="display:none;">
+                            <div class="dropdown-header">Select Date Range</div>
+                            <div class="dropdown-item date-preset" data-label="Last 7 Days">Last 7 Days</div>
+                            <div class="dropdown-item date-preset" data-label="Last 30 Days">Last 30 Days</div>
+                            <div class="dropdown-item date-preset" data-label="Last 90 Days">Last 90 Days</div>
+                            <div class="dropdown-item date-preset" data-label="This Year">This Year</div>
+                            <div class="dropdown-divider"></div>
+                            <div style="padding:10px 14px;">
+                                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">From</label>
+                                <input type="date" id="date-from" class="cyber-input" style="height:32px;font-size:12px;margin-bottom:8px;">
+                                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">To</label>
+                                <input type="date" id="date-to" class="cyber-input" style="height:32px;font-size:12px;margin-bottom:10px;">
+                                <button id="apply-date-btn" class="btn-primary" style="width:100%;justify-content:center;padding:7px;">Apply Range</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <button class="btn-icon" id="filter-btn"><i class="fa-solid fa-filter"></i> Filters</button>
+
+                    <!-- Notifications -->
+                    <div class="notifications" id="notif-btn">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="badge" id="notif-badge">3</span>
+                        <div id="notif-dropdown" class="topbar-dropdown notif-dropdown" style="display:none;">
+                            <div class="dropdown-header">Notifications <span style="float:right;font-size:11px;color:#38bdf8;cursor:pointer;" id="mark-all-read">Mark all read</span></div>
+                            <div class="notif-item unread">
+                                <div class="notif-icon red"><i class="fa-solid fa-circle-exclamation"></i></div>
+                                <div class="notif-body">
+                                    <p>High severity IOC matched in network logs</p>
+                                    <span>10 minutes ago</span>
+                                </div>
+                            </div>
+                            <div class="notif-item unread">
+                                <div class="notif-icon yellow"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                <div class="notif-body">
+                                    <p>APT29 campaign detected — new IOCs added</p>
+                                    <span>1 hour ago</span>
+                                </div>
+                            </div>
+                            <div class="notif-item unread">
+                                <div class="notif-icon blue"><i class="fa-solid fa-shield-halved"></i></div>
+                                <div class="notif-body">
+                                    <p>API rate limit approaching for Threat Feed</p>
+                                    <span>2 hours ago</span>
+                                </div>
+                            </div>
+                            <div class="notif-item">
+                                <div class="notif-icon green"><i class="fa-solid fa-check-circle"></i></div>
+                                <div class="notif-body">
+                                    <p>Knowledge Graph sync completed successfully</p>
+                                    <span>Yesterday</span>
+                                </div>
+                            </div>
+                            <div class="dropdown-footer" id="view-all-alerts-btn">View All Alerts</div>
+                        </div>
+                    </div>
+
+                    <div class="user-profile" id="user-profile-btn" style="cursor: pointer;" title="Click to Sign In / Register">
+                        <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                        <div class="user-info">
+                            <span class="name" id="user-display-name">Sign In</span>
+                            <span class="role" id="user-display-role">Account &amp; SMTP</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Grid -->
+            <div id="view-dashboard" class="dashboard-grid">
+                
+                <!-- KPI Row -->
+                <div class="kpi-row">
+                    <div class="kpi-card blue">
+                        <div class="kpi-header">
+                            <div class="kpi-icon"><i class="fa-solid fa-file-lines"></i></div>
+                            <div class="kpi-stats">
+                                <span class="kpi-label">Total Reports</span>
+                                <h3><span id="kpi-reports-val">1,248</span> <span class="trend up"><i class="fa-solid fa-arrow-up"></i> 18.5%</span></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card green">
+                        <div class="kpi-header">
+                            <div class="kpi-icon"><i class="fa-solid fa-border-all"></i></div>
+                            <div class="kpi-stats">
+                                <span class="kpi-label">IOCs Extracted</span>
+                                <h3><span id="kpi-iocs-val">15,786</span> <span class="trend up"><i class="fa-solid fa-arrow-up"></i> 22.7%</span></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card purple">
+                        <div class="kpi-header">
+                            <div class="kpi-icon"><i class="fa-solid fa-user-secret"></i></div>
+                            <div class="kpi-stats">
+                                <span class="kpi-label">Threat Actors</span>
+                                <h3><span id="kpi-actors-val">342</span> <span class="trend up"><i class="fa-solid fa-arrow-up"></i> 15.3%</span></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card red">
+                        <div class="kpi-header">
+                            <div class="kpi-icon"><i class="fa-solid fa-bug"></i></div>
+                            <div class="kpi-stats">
+                                <span class="kpi-label">Malware Families</span>
+                                <h3><span id="kpi-malware-val">512</span> <span class="trend up"><i class="fa-solid fa-arrow-up"></i> 12.1%</span></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card yellow">
+                        <div class="kpi-header">
+                            <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="kpi-stats">
+                                <span class="kpi-label">High Severity Alerts</span>
+                                <h3><span id="kpi-alerts-val">98</span> <span class="trend up"><i class="fa-solid fa-arrow-up"></i> 31.6%</span></h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="grid-row-2">
+                    <div class="panel col-span-2">
+                        <div class="panel-header">
+                            <h3>Threats Over Time</h3>
+                            <select class="dropdown"><option>Last 30 Days</option></select>
+                        </div>
+                        <div class="chart-container"><canvas id="threatsTimeChart"></canvas></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>Threat Severity Distribution</h3>
+                        </div>
+                        <div class="chart-container donut-container">
+                            <canvas id="severityChart"></canvas>
+                            <div class="donut-center">
+                                <h2>1,248</h2>
+                                <span>Reports</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>Latest Threats</h3>
+                            <a href="#" class="view-all">View All</a>
+                        </div>
+                        <div class="list-container" id="latest-threats-list">
+                            <div class="list-item">
+                                <span class="badge badge-high">High</span>
+                                <div class="item-details">
+                                    <p>APT29 exploits CVE-2026-12345</p>
+                                    <span>APT29 • 31 May 2026 10:30 AM</span>
+                                </div>
+                            </div>
+                            <div class="list-item">
+                                <span class="badge badge-critical">Critical</span>
+                                <div class="item-details">
+                                    <p>New Emotet campaign using malspam</p>
+                                    <span>Emotet • 31 May 2026 09:15 AM</span>
+                                </div>
+                            </div>
+                            <div class="list-item">
+                                <span class="badge badge-medium">Medium</span>
+                                <div class="item-details">
+                                    <p>Malicious domain: bad-example.com</p>
+                                    <span>Unknown • 31 May 2026 08:45 AM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+            </div>
+
+            <!-- New Views (Hidden by default) -->
+            <div id="view-threat-reports" class="module-view" style="display: none;">
+                <h2>Threat Reports</h2>
+                <div class="panel mt-10">
+                    <table class="cyber-table">
+                        <tbody id="table-reports">
+                            <tr><th>Report ID</th><th>Title</th><th>Date</th><th>Severity</th><th>Status</th></tr>
+                            <tr><td>REP-2026-001</td><td>CISA Advisory: APT29</td><td>31 May 2026</td><td><span class="badge badge-high">High</span></td><td>Processed</td></tr>
+                            <tr><td>REP-2026-002</td><td>Unit 42: Emotet Campaign</td><td>31 May 2026</td><td><span class="badge badge-critical">Critical</span></td><td>Processed</td></tr>
+                            <tr><td>REP-2026-003</td><td>FireEye: SilentHorn Analysis</td><td>02 Jun 2026</td><td><span class="badge badge-medium">Medium</span></td><td>Processed</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-iocs" class="module-view" style="display: none;">
+                <h2>Indicators of Compromise (IOCs)</h2>
+                <div class="panel mt-10">
+                    <table class="cyber-table">
+                        <tbody id="table-iocs">
+                            <tr><th>Value</th><th>Type</th><th>Related Actor</th><th>Confidence</th></tr>
+                            <tr><td>185.132.189.10</td><td>IP Address</td><td>APT29</td><td>95%</td></tr>
+                            <tr><td>secure-login-portal-update.com</td><td>Domain</td><td>Unknown</td><td>88%</td></tr>
+                            <tr><td>a3b92f74e6b12d59a840e6c1e13b8273</td><td>MD5</td><td>Emotet</td><td>99%</td></tr>
+                            <tr><td>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</td><td>Registry</td><td>APT29</td><td>90%</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-threat-actors" class="module-view" style="display: none;">
+                <h2>Threat Actors</h2>
+                <div class="dashboard-grid mt-10" id="grid-actors">
+                    <div class="kpi-card purple">
+                        <div class="kpi-header"><div class="kpi-icon"><i class="fa-solid fa-user-secret"></i></div></div>
+                        <h3>APT29</h3><p style="color:#8b9eb3; margin-top:5px;">Origin: Russia<br>Targets: Government, Healthcare</p>
+                    </div>
+                    <div class="kpi-card purple">
+                        <div class="kpi-header"><div class="kpi-icon"><i class="fa-solid fa-user-secret"></i></div></div>
+                        <h3>Lazarus Group</h3><p style="color:#8b9eb3; margin-top:5px;">Origin: North Korea<br>Targets: Financial, Crypto</p>
+                    </div>
+                    <div class="kpi-card purple">
+                        <div class="kpi-header"><div class="kpi-icon"><i class="fa-solid fa-user-secret"></i></div></div>
+                        <h3>Emotet</h3><p style="color:#8b9eb3; margin-top:5px;">Origin: Unknown<br>Targets: Global</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-malware" class="module-view" style="display: none;">
+                <h2>Malware Families</h2>
+                <div class="panel mt-10">
+                    <table class="cyber-table">
+                        <tbody id="table-malware">
+                            <tr><th>Name</th><th>Type</th><th>Aliases</th><th>Active</th></tr>
+                            <tr><td>SilentHorn</td><td>Ransomware</td><td>-</td><td>Yes</td></tr>
+                            <tr><td>TrickBot</td><td>Trojan</td><td>Trickster</td><td>Yes</td></tr>
+                            <tr><td>Cobalt Strike</td><td>Tool</td><td>Beacon</td><td>Yes</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-vulnerabilities-cve" class="module-view" style="display: none;">
+                <h2>Vulnerabilities (CVE)</h2>
+                <div class="panel mt-10">
+                    <table class="cyber-table">
+                        <tr><th>CVE ID</th><th>Description</th><th>CVSS</th><th>Exploited By</th></tr>
+                        <tr><td>CVE-2023-23397</td><td>Microsoft Outlook EoP</td><td><span class="badge badge-critical">9.8</span></td><td>APT29</td></tr>
+                        <tr><td>CVE-2026-12345</td><td>Zero-day in popular firewall</td><td><span class="badge badge-high">8.5</span></td><td>Unknown</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-mitre-att-ck" class="module-view" style="display: none;">
+                <h2>MITRE ATT&CK Matrix</h2>
+                <div class="panel mt-10">
+                    <table class="cyber-table">
+                        <tbody id="table-mitre">
+                            <tr><th>Tactic</th><th>Techniques Observed</th></tr>
+                            <tr><td>Initial Access</td><td>T1566 - Phishing, T1190 - Exploit Public-Facing App</td></tr>
+                            <tr><td>Execution</td><td>T1059 - Command and Scripting Interpreter, T1204 - User Execution</td></tr>
+                            <tr><td>Persistence</td><td>T1547 - Registry Run Keys</td></tr>
+                            <tr><td>Exfiltration</td><td>T1041 - Exfiltration Over C2 Channel</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-knowledge-graph" class="module-view" style="display: none; height: calc(100vh - 120px);">
+                <h2>Global Knowledge Graph</h2>
+                <div class="panel mt-10" style="height: calc(100% - 50px); position: relative;">
+                    <div id="fullGraph" style="width: 100%; height: 100%;"></div>
+                </div>
+            </div>
+
+            <div id="view-alerts" class="module-view" style="display: none;">
+                <h2>System Alerts</h2>
+                <div class="panel mt-10">
+                    <div class="list-container">
+                        <div class="list-item"><span class="badge badge-critical">New</span><div class="item-details"><p>High severity IOC matched in internal network logs</p><span>10 mins ago</span></div></div>
+                        <div class="list-item"><span class="badge badge-high">Warning</span><div class="item-details"><p>API rate limit approaching for Threat Feed integration</p><span>1 hour ago</span></div></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="view-reports" class="module-view" style="display: none;">
+                <h2>Generated Reports</h2>
+                <div class="panel mt-10">
+                    <p style="color:#8b9eb3;">No custom PDF reports have been generated yet.</p>
+                </div>
+            </div>
+
+            <div id="view-settings" class="module-view" style="display: none;">
+                <h2>Settings</h2>
+                <div class="panel mt-10">
+                    <p style="color:#8b9eb3;">Global API Keys and User Preferences are managed here.</p>
+                    <button id="btn-clear-cache" class="btn-primary mt-10">Clear Local Cache</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Threat Analyzer Dual-Mode Modal (Tabs + Side-by-Side) -->
+    <div id="analyzer-modal" class="modal">
+        <div class="modal-content panel analyzer-split-card" style="width: 92vw !important; max-width: 1250px !important; height: 85vh !important; max-height: 820px !important; margin: auto !important; padding: 24px !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; position: relative !important;">
+            <span class="close-modal" id="close-analyzer-modal"><i class="fa-solid fa-xmark"></i></span>
+            
+            <!-- Modal Header with View Mode Tabs -->
+            <div class="analyzer-modal-header">
+                <div>
+                    <h2 style="font-size:20px; font-weight:600; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-brain" style="color:#38bdf8;"></i> Threat Analyzer Engine
+                    </h2>
+                </div>
+
+                <!-- Tab Controls: Side-by-Side / Analyzing Tab / Output Tab -->
+                <div class="analyzer-tab-bar">
+                    <button type="button" class="analyzer-tab-btn active" data-view="split">
+                        <i class="fa-solid fa-columns"></i> Side-by-Side
+                    </button>
+                    <button type="button" class="analyzer-tab-btn" data-view="input">
+                        <i class="fa-solid fa-file-pen"></i> Analyzing Tab
+                    </button>
+                    <button type="button" class="analyzer-tab-btn" data-view="output" id="tab-output-btn">
+                        <i class="fa-solid fa-square-poll-vertical"></i> Output Tab <span class="tab-badge" id="output-badge-count" style="display:none;">0</span>
+                    </button>
+                </div>
+
+                <div class="header-sample-btns">
+                    <button type="button" class="btn-sample" id="sample-apt29-btn" title="Load sample APT29 advisory"><i class="fa-solid fa-flask"></i> APT29 Sample</button>
+                    <button type="button" class="btn-sample" id="sample-emotet-btn" title="Load sample Emotet advisory"><i class="fa-solid fa-bug"></i> Emotet Sample</button>
+                </div>
+            </div>
+
+            <!-- Body Container for Panes -->
+            <div class="analyzer-split-body mode-split" id="analyzer-body-container">
+                
+                <!-- 1. Analyzing Purpose (Input Pane) -->
+                <div class="split-pane pane-left" id="pane-input">
+                    <div class="pane-header">
+                        <span class="pane-title"><i class="fa-solid fa-file-pen" style="color:#38bdf8;"></i> 1. Analyzing Purpose (Input)</span>
+                        <span class="pane-badge"><i class="fa-solid fa-keyboard"></i> Raw CTI Text / File</span>
+                    </div>
+
+                    <div class="input-wrapper">
+                        <textarea id="report-input" class="cyber-input analyzer-textarea" placeholder="Paste unstructured CTI report, threat advisory, or security log here..."></textarea>
+                    </div>
+
+                    <div class="action-bar mt-10">
+                        <button id="analyze-btn" class="btn-primary" style="flex: 2; justify-content: center; height: 42px; font-weight: 600;">
+                            <i class="fa-solid fa-play"></i> Execute Analysis
+                        </button>
+                        <label for="file-upload" class="btn-secondary" style="flex: 1; text-align: center; justify-content: center; height: 42px; margin: 0; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <i class="fa-solid fa-file-arrow-up"></i> Upload PDF/TXT
+                        </label>
+                        <input type="file" id="file-upload" accept=".txt,.pdf" style="display:none;">
+                    </div>
+                </div>
+
+                <!-- 2. Result Purpose (Output Pane) -->
+                <div class="split-pane pane-right" id="pane-output">
+                    <div class="pane-header">
+                        <span class="pane-title"><i class="fa-solid fa-square-poll-vertical" style="color:#10b981;"></i> 2. Result Purpose (Intelligence Output)</span>
+                        <span class="pane-badge status-badge-idle" id="result-status-badge"><i class="fa-solid fa-circle"></i> Ready</span>
+                    </div>
+
+                    <!-- Placeholder state before analysis -->
+                    <div id="analysis-empty-state" class="results-empty-state">
+                        <div class="empty-icon"><i class="fa-solid fa-radar"></i></div>
+                        <h4>No Analysis Performed Yet</h4>
+                        <p>Paste a CTI report or click a sample on the left, then click <strong>Execute Analysis</strong> to extract IOCs, Threat Actors, Malware, and MITRE ATT&amp;CK techniques.</p>
+                    </div>
+
+                    <!-- Dynamic Results Container -->
+                    <div id="analysis-results" class="results-scroll-container" style="display: none;"></div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth / Login / Signup Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content panel auth-card">
+            <span id="close-auth-modal" class="close-modal"><i class="fa-solid fa-xmark"></i></span>
+
+            <div class="auth-tabs">
+                <button class="auth-tab-btn active" data-tab="login-tab"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+                <button class="auth-tab-btn" data-tab="register-tab"><i class="fa-solid fa-user-plus"></i> Register</button>
+            </div>
+
+            <div id="auth-alert" class="auth-alert" style="display: none;"></div>
+
+            <!-- ===================== LOGIN TAB ===================== -->
+            <div id="login-tab" class="auth-tab-content active">
+
+                <!-- Step 1: Enter Email -->
+                <div id="login-step-1">
+                    <h2 style="margin-top:15px; color:#f8fafc;">Welcome Back</h2>
+                    <p class="auth-subtitle" style="color:#94a3b8; margin-bottom:20px; font-size:14px;">Enter your email to receive a one-time login code</p>
+                    <form id="form-login-email">
+                        <div class="form-group" style="margin-bottom:20px;">
+                            <label style="display:block; color:#cbd5e1; font-size:13px; margin-bottom:5px;"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                            <input type="email" id="login-email" class="cyber-input" placeholder="name@company.com" required style="width:100%;">
+                        </div>
+                        <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+                            <i class="fa-solid fa-paper-plane"></i> Send Login Code
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Step 2: Enter OTP -->
+                <div id="login-step-2" style="display:none;">
+                    <h2 style="margin-top:15px; color:#f8fafc;">Enter Your Code</h2>
+                    <p class="auth-subtitle" style="color:#94a3b8; margin-bottom:6px; font-size:14px;">A 6-digit code was sent to</p>
+                    <p style="color:#38bdf8; font-weight:600; margin-bottom:20px; font-size:14px;" id="login-otp-email-display"></p>
+                    <form id="form-login-otp">
+                        <div class="form-group" style="margin-bottom:20px;">
+                            <input type="text" id="login-otp" class="cyber-input otp-input" placeholder="000000" maxlength="6" autocomplete="one-time-code" required style="width:100%;">
+                        </div>
+                        <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+                            <i class="fa-solid fa-shield-halved"></i> Verify &amp; Sign In
+                        </button>
+                        <button type="button" id="login-resend-btn" class="btn-secondary" style="width:100%; margin-top:10px; text-align:center;">
+                            <i class="fa-solid fa-rotate-right"></i> Resend Code
+                        </button>
+                        <button type="button" id="login-back-btn" class="btn-secondary" style="width:100%; margin-top:8px; text-align:center; color:#64748b;">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ===================== REGISTER TAB ===================== -->
+            <div id="register-tab" class="auth-tab-content" style="display: none;">
+
+                <!-- Step 1: Enter Name + Email -->
+                <div id="reg-step-1">
+                    <h2 style="margin-top:15px; color:#f8fafc;">Create Account</h2>
+                    <p class="auth-subtitle" style="color:#94a3b8; margin-bottom:20px; font-size:14px;">No password needed — we'll verify your email with a one-time code</p>
+                    <form id="form-register-init">
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="display:block; color:#cbd5e1; font-size:13px; margin-bottom:5px;"><i class="fa-solid fa-user"></i> Full Name</label>
+                            <input type="text" id="reg-username" class="cyber-input" placeholder="Alice Analyst" required style="width:100%;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:20px;">
+                            <label style="display:block; color:#cbd5e1; font-size:13px; margin-bottom:5px;"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                            <input type="email" id="reg-email" class="cyber-input" placeholder="alice@company.com" required style="width:100%;">
+                        </div>
+                        <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+                            <i class="fa-solid fa-paper-plane"></i> Send Verification Code
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Step 2: Enter OTP -->
+                <div id="reg-step-2" style="display:none;">
+                    <h2 style="margin-top:15px; color:#f8fafc;">Verify Your Email</h2>
+                    <p class="auth-subtitle" style="color:#94a3b8; margin-bottom:6px; font-size:14px;">A 6-digit code was sent to</p>
+                    <p style="color:#38bdf8; font-weight:600; margin-bottom:20px; font-size:14px;" id="reg-otp-email-display"></p>
+                    <form id="form-register-verify">
+                        <div class="form-group" style="margin-bottom:20px;">
+                            <input type="text" id="reg-otp" class="cyber-input otp-input" placeholder="000000" maxlength="6" autocomplete="one-time-code" required style="width:100%;">
+                        </div>
+                        <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+                            <i class="fa-solid fa-user-check"></i> Verify &amp; Create Account
+                        </button>
+                        <button type="button" id="reg-resend-btn" class="btn-secondary" style="width:100%; margin-top:10px; text-align:center;">
+                            <i class="fa-solid fa-rotate-right"></i> Resend Code
+                        </button>
+                        <button type="button" id="reg-back-btn" class="btn-secondary" style="width:100%; margin-top:8px; text-align:center; color:#64748b;">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+    </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="{{ url_for('static', filename='app.js', v=101) }}"></script>
+</body>
+</html>
+
