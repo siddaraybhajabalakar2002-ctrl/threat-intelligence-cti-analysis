@@ -3,7 +3,7 @@ services:
     name: cti-nexus
     env: docker
     region: oregon
-    plan: starter
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: PORT

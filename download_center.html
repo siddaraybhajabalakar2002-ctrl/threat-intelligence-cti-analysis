@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Center - CTI Project Expo Presentation & Assets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #070b14;
+      --card-bg: rgba(15, 23, 42, 0.85);
+      --cyan: #00f2fe;
+      --cyan-soft: #38bdf8;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --purple: #a855f7;
+      --border: rgba(56, 189, 248, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 242, 254, 0.1) 0%, transparent 45%);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .header-box {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan-soft);
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 12px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 50%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      font-size: 15px;
+      color: #94a3b8;
+      max-width: 650px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 15px 30px -10px rgba(0,0,0,0.6);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--accent-color, var(--cyan));
+    }
+
+    .card:hover {
+      border-color: var(--cyan);
+      transform: translateY(-3px);
+      box-shadow: 0 20px 40px -10px rgba(0, 242, 254, 0.2);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .card-info h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-info .file-meta {
+      font-size: 12px;
+      color: var(--cyan-soft);
+      font-family: 'Fira Code', monospace;
+      margin-top: 2px;
+    }
+
+    .card-desc {
+      font-size: 13.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      border: 1px solid #38bdf8;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0369a1, #0284c7);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(30, 41, 59, 0.8);
+      color: #e2e8f0;
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--cyan);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .footer-bar {
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 10px;
+    }
+
+    .footer-bar strong {
+      color: var(--cyan-soft);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header-box">
+      <span class="badge">🛡️ Project Expo 2026 Downloads</span>
+      <h1>CTI Analysis Pipeline Asset Hub</h1>
+      <p class="subtitle">Click any button below to download or view the presentation and poster assets on your device.</p>
+    </div>
+
+    <div class="grid">
+      <!-- Card 0: Simple 11-Slide Presentation (Recommended) -->
+      <div class="card" style="--accent-color: var(--gold); border-color: rgba(245, 158, 11, 0.4);">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(245, 158, 11, 0.1); border-color:rgba(245, 158, 11, 0.3);">⚡</div>
+          <div class="card-info">
+            <h2>Simple Expo Presentation (11 Slides)</h2>
+            <div class="file-meta" style="color:var(--gold);">CTI_Simple_Expo_Presentation.pptx (Concise 11 Slides)</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          <strong>Recommended for Expo Pitch (5–7 mins):</strong> Crisp 11-slide presentation covering the essentials: Title, Introduction, Problems, Aim, 4-Stage Architecture, NER, MITRE ATT&CK, Knowledge Graph & Scoring, Enterprise Alerts, Results, and Defense.
+        </div>
+        <div class="btn-group">
+          <a href="CTI_Simple_Expo_Presentation.pptx" download="CTI_Simple_Expo_Presentation.pptx" class="btn btn-primary" style="background:linear-gradient(135deg,#d97706,#b45309); border-color:#f59e0b;">
+            📥 Download 11-Slide .PPTX
+          </a>
+          <a href="cti_simple_presentation.html" target="_blank" class="btn btn-secondary">
+            👁️ Web Deck (11 Slides)
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 1: PowerPoint PPTX (20 Slides) -->
+      <div class="card" style="--accent-color: var(--cyan);">
+        <div class="card-header">
+          <div class="card-icon">📊</div>
+          <div class="card-info">
+            <h2>Detailed Presentation (20 Slides)</h2>
+            <div class="file-meta">CTI_Project_Expo_Presentation.pptx (Full Edition)</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          Comprehensive 20-slide deep-dive presentation with full architecture breakdowns, sysadmin mitigation playbooks, extensive comparative tables, and future research roadmap.
+        </div>
+        <div class="btn-group">
+          <a href="CTI_Project_Expo_Presentation.pptx" download="CTI_Project_Expo_Presentation.pptx" class="btn btn-primary">
+            📥 Download 20-Slide .PPTX
+          </a>
+          <a href="cti_expo_presentation.html" target="_blank" class="btn btn-secondary">
+            🚀 Interactive Web Deck
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 2: Interactive Web Deck -->
+      <div class="card" style="--accent-color: var(--emerald);">
+        <div class="card-header">
+          <div class="card-icon">🌐</div>
+          <div class="card-info">
+            <h2>Interactive Web Deck</h2>
+            <div class="file-meta">cti_expo_presentation.html (Live App)</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          Interactive HTML5 presentation deck with live simulated CTI report runner, clickable Knowledge Graph explorer, threat severity score dial, speaker notes, and pitch timer.
+        </div>
+        <div class="btn-group">
+          <a href="cti_expo_presentation.html" target="_blank" class="btn btn-primary">
+            🚀 Open in Browser
+          </a>
+          <a href="cti_expo_presentation.html" download="cti_expo_presentation.html" class="btn btn-secondary">
+            📥 Save HTML
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 3: A3 Academic Poster PPTX -->
+      <div class="card" style="--accent-color: var(--amber);">
+        <div class="card-header">
+          <div class="card-icon">📜</div>
+          <div class="card-info">
+            <h2>A3 Project Poster (.pptx)</h2>
+            <div class="file-meta">CTI_Poster_A3.pptx (Print Ready)</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          A3 Portrait presentation poster for the expo display board with architectural flowcharts, dashboard UI mockups, technical pipeline steps, and student credentials.
+        </div>
+        <div class="btn-group">
+          <a href="CTI_Poster_A3.pptx" download="CTI_Poster_A3.pptx" class="btn btn-primary">
+            📥 Download Poster .PPTX
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 4: A3 Poster HTML -->
+      <div class="card" style="--accent-color: var(--purple);">
+        <div class="card-header">
+          <div class="card-icon">🖨️</div>
+          <div class="card-info">
+            <h2>A3 Web Poster (HTML / PDF)</h2>
+            <div class="file-meta">cti_poster_a3.html (Vector Graphic)</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          Interactive A3 poster page formatted with CSS @page print margins. Perfect for viewing on large monitors or printing to ultra-sharp PDF.
+        </div>
+        <div class="btn-group">
+          <a href="cti_poster_a3.html" target="_blank" class="btn btn-primary">
+            👁️ View Poster
+          </a>
+          <a href="cti_poster_a3.html" download="cti_poster_a3.html" class="btn btn-secondary">
+            📥 Save HTML
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      Student Presenter: <strong>Siddaray Bhajabalakar</strong> (USN: <strong>P03AC24S126056</strong>) &bull; MCA 2025–2026 &bull; Administrative Management College (AMC)
+    </div>
+  </div>
+
+</body>
+</html>

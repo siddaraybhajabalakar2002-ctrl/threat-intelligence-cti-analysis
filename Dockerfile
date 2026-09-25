@@ -21,4 +21,4 @@ ENV PYTHONPATH="/app/src"
 EXPOSE 5000
 
 # Run the application using Gunicorn (Production WSGI Server)
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "8", "--timeout", "0", "api.app:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 1 --threads 8 --timeout 120 api.app:app"]

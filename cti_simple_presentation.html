@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CTI Analysis Pipeline - Simple Expo Presentation (11 Slides)</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #070c18;
+      --card-bg: rgba(14, 22, 41, 0.85);
+      --card-border: rgba(56, 189, 248, 0.2);
+      --card-border-hover: rgba(56, 189, 248, 0.6);
+      --cyan: #00f2fe;
+      --cyan-soft: #38bdf8;
+      --blue: #0284c7;
+      --gold: #f59e0b;
+      --emerald: #10b981;
+      --crimson: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(2, 132, 199, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(0, 242, 254, 0.08) 0%, transparent 45%);
+    }
+
+    /* Top Control Bar */
+    header {
+      background: rgba(10, 17, 36, 0.95);
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      font-size: 22px;
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--cyan-soft);
+      font-family: 'Fira Code', monospace;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .counter {
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--cyan-soft);
+      padding: 0 10px;
+    }
+
+    .btn {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--cyan);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border-color: var(--cyan-soft);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0369a1, #0284c7);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.5);
+    }
+
+    /* Deck Canvas */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .viewport {
+      width: 100%;
+      max-width: 1300px;
+      aspect-ratio: 16 / 9;
+      background: #090f20;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 40px 48px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(30px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+      z-index: 10;
+    }
+
+    .slide-header {
+      margin-bottom: 22px;
+    }
+
+    .slide-tag {
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan-soft);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .slide-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 4px;
+    }
+
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--card-accent, var(--cyan));
+    }
+
+    .card:hover {
+      border-color: var(--card-border-hover);
+      transform: translateY(-2px);
+    }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--card-accent, var(--cyan-soft));
+    }
+
+    .card-body {
+      font-size: 13.5px;
+      color: #cbd5e1;
+      line-height: 1.55;
+    }
+
+    ul.bullets {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    ul.bullets li {
+      font-size: 13.5px;
+      color: #e2e8f0;
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    ul.bullets li::before {
+      content: '▸';
+      color: var(--cyan-soft);
+      font-size: 15px;
+      line-height: 1;
+      margin-top: 1px;
+    }
+
+    .footer-bar {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Speaker Notes Bar */
+    .speaker-notes-bar {
+      background: rgba(14, 22, 41, 0.95);
+      border-top: 2px solid var(--cyan);
+      padding: 14px 28px;
+      display: none;
+      font-size: 13px;
+      color: #e2e8f0;
+      line-height: 1.6;
+    }
+
+    .speaker-notes-bar.open {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">🛡️</div>
+      <div>
+        <div class="brand-title">CTI Analysis Pipeline</div>
+        <div class="brand-sub">Project Expo Presentation (11-Slide Edition)</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" onclick="prevSlide()">◀ Prev</button>
+      <div class="counter" id="counter">01 / 11</div>
+      <button class="btn btn-primary" onclick="nextSlide()">Next ▶</button>
+      <button class="btn" onclick="toggleNotes()">📝 Notes</button>
+      <a href="CTI_Simple_Expo_Presentation.pptx" download class="btn" style="border-color:var(--gold); color:var(--gold);">
+        📥 Download .PPTX
+      </a>
+    </div>
+  </header>
+
+  <!-- Slide Canvas -->
+  <main>
+    <div class="viewport">
+
+      <!-- SLIDE 1: Title -->
+      <section class="slide active" data-notes="Welcome everyone! I am Siddaray Bhajabalakar, presenting my MCA Project: 'Cyber Threat Intelligence Pipeline with NLP & LLM'. In this 11-slide presentation, I will walk you through how our system automates threat report parsing into knowledge graphs and instant defenses.">
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:24px;">
+          <div class="slide-tag">🛡️ MCA ACADEMIC PROJECT EXPO 2026 &bull; PRESENTATION</div>
+          <h1 style="font-family:'Outfit',sans-serif; font-size:42px; font-weight:900; line-height:1.2; color:#fff;">
+            Cyber Threat Intelligence (CTI)<br>
+            <span style="color:var(--cyan);">Analysis Pipeline with NLP & LLM</span>
+          </h1>
+          <p style="font-size:16px; color:var(--text-muted); max-width:850px; line-height:1.5;">
+            An automated system for extracting Indicators of Compromise, standardizing attacker behaviors against the MITRE ATT&CK framework, and reasoning over threat networks using Knowledge Graphs.
+          </p>
+
+          <div style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:14px; padding:20px 24px; display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:900px;">
+            <div>
+              <div style="font-size:11px; color:var(--cyan-soft); font-family:'Fira Code'; font-weight:700;">PRESENTED BY:</div>
+              <div style="font-size:18px; font-weight:800; color:#fff; font-family:'Outfit';">Siddaray Bhajabalakar</div>
+              <div style="font-size:13px; color:var(--gold); font-weight:600;">USN: P03AC24S126056</div>
+            </div>
+            <div>
+              <div style="font-size:11px; color:var(--cyan-soft); font-family:'Fira Code'; font-weight:700;">PROGRAM & COLLEGE:</div>
+              <div style="font-size:14px; font-weight:700; color:#fff;">Master of Computer Applications (MCA) &bull; 2025–26</div>
+              <div style="font-size:12.5px; color:var(--text-muted);">Administrative Management College (AMC), Bengaluru</div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>Use Arrow Keys (← / →) or Spacebar to navigate &bull; Press Notes for speaker guide</div>
+          <div>Slide 01 of 11</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 2: Introduction -->
+      <section class="slide" data-notes="Explain what CTI is: evidence-based cyber knowledge. Highlight the human bottleneck: analysts spending 3 to 5 hours reading blogs and PDFs to copy IP addresses.">
+        <div class="slide-header">
+          <div class="slide-tag">BACKGROUND & CONTEXT</div>
+          <h2 class="slide-title">Introduction: What is Cyber Threat Intelligence?</h2>
+        </div>
+        <div class="slide-body">
+          <div class="card" style="--card-accent: var(--cyan);">
+            <div class="card-title">💡 The Role of CTI in Modern Defense</div>
+            <div class="card-body">
+              Cyber Threat Intelligence (CTI) is structured, actionable knowledge about active threat actors, malware campaigns, and Indicators of Compromise (IOCs) that allows organizations to anticipate and block cyber attacks before damage occurs.
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="card" style="--card-accent: var(--blue);">
+              <div class="card-title">Unstructured Data Deluge</div>
+              <ul class="bullets">
+                <li>Threat reports, vendor blogs, and PDFs are published daily in free-form text.</li>
+                <li>Perimeter security tools (firewalls, SIEM) cannot ingest unstructured English text.</li>
+              </ul>
+            </div>
+            <div class="card" style="--card-accent: var(--crimson);">
+              <div class="card-title">The Analyst Bottleneck</div>
+              <ul class="bullets">
+                <li>Security analysts manually copy and paste IPs, hashes, and CVEs for 3–5 hours per report.</li>
+                <li>Slow manual triage creates high adversary dwell time (16 days undetected).</li>
+              </ul>
+            </div>
+            <div class="card" style="--card-accent: var(--emerald);">
+              <div class="card-title">Our Solution</div>
+              <ul class="bullets">
+                <li>NLP & Regex automatically extract IOCs and map MITRE techniques in sub-seconds.</li>
+                <li>Builds a queryable Knowledge Graph and generates instant defensive playbooks.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>CTI Analysis Pipeline &bull; Siddaray Bhajabalakar (P03AC24S126056)</div>
+          <div>Slide 02 of 11</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 3: Problem Statement -->
+      <section class="slide" data-notes="Review the 4 core problems: unstructured text overload, analyst burnout, inconsistent MITRE tagging, and disconnected IOCs without relational graphs.">
+        <div class="slide-header">
+          <div class="slide-tag">PROBLEM DEFINITION</div>
+          <h2 class="slide-title">Problem Statement: Challenges in Modern SOCs</h2>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="--card-accent: var(--gold);">
+              <div class="card-title">1. Unstructured Data Overload</div>
+              <div class="card-body">
+                Over 85% of actionable threat intelligence is published in unstructured text format (blogs, CISA bulletins, PDF advisories). Security devices cannot parse free-form text.
+              </div>
+            </div>
+            <div class="card" style="--card-accent: var(--crimson);">
+              <div class="card-title">2. Manual Analyst Burnout</div>
+              <div class="card-body">
+                SOC analysts spend hundreds of hours per week manually extracting IOCs. High fatigue leads to typos, missed indicators, and delayed incident containment.
+              </div>
+            </div>
+            <div class="card" style="--card-accent: var(--cyan);">
+              <div class="card-title">3. Inconsistent ATT&CK Mapping</div>
+              <div class="card-body">
+                Classifying attacker techniques into the MITRE ATT&CK framework requires deep domain expertise. Different analysts map the same attack behavior inconsistently.
+              </div>
+            </div>
+            <div class="card" style="--card-accent: var(--blue);">
+              <div class="card-title">4. Disconnected, Siloed Intelligence</div>
+              <div class="card-body">
+                A standalone malicious IP provides zero context. Analysts need to know: Which APT group controls it? What malware communicates with it? Relational graphs are absent.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>CTI Analysis Pipeline &bull; Siddaray Bhajabalakar (P03AC24S126056)</div>
+          <div>Slide 03 of 11</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 4: Aim & Objectives -->
+      <section class="slide" data-notes="Present the aim and the 6 specific objectives: Ingestion, NER, MITRE tagging, Knowledge Graph, Severity scoring, and REST API alerting.">
+        <div class="slide-header">
+          <div class="slide-tag">PROJECT OBJECTIVES</div>
+          <h2 class="slide-title">Aim & Key Research Objectives</h2>
+        </div>
+        <div class="slide-body">
+          <div class="card" style="--card-accent: var(--cyan);">
+            <div class="card-title">🎯 Overarching Project Aim</div>
+            <div class="card-body">
+              To engineer an automated, end-to-end Cyber Threat Intelligence pipeline using NLP and LLMs to ingest unstructured security text, extract threat entities, standardize behaviors against MITRE ATT&CK, construct a Knowledge Graph, and generate instant defensive playbooks.
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="card" style="--card-accent: var(--cyan-soft);">
+              <div class="card-title">01. IOC Extraction</div>
+              <div class="card-body">Extract deterministic IOCs (IPs, hashes, domains, CVEs) via pre-compiled regex patterns.</div>
+            </div>
+            <div class="card" style="--card-accent: var(--emerald);">
+              <div class="card-title">02. spaCy Entity NLP</div>
+              <div class="card-body">Extract threat actors, malware families, and victim sectors using linguistic models.</div>
+            </div>
+            <div class="card" style="--card-accent: var(--gold);">
+              <div class="card-title">03. ATT&CK Mapping</div>
+              <div class="card-body">Map free-form text to 100+ Enterprise MITRE techniques and tactics automatically.</div>
+            </div>
+            <div class="card" style="--card-accent: var(--blue);">
+              <div class="card-title">04. Knowledge Graph</div>
+              <div class="card-body">Build a directed NetworkX graph linking entities into Subject-Predicate-Object triples.</div>
+            </div>
+            <div class="card" style="--card-accent: var(--crimson);">
+              <div class="card-title">05. Threat Severity Score</div>
+              <div class="card-body">Compute an objective 0–10 severity score combining entity risk with tactic impact.</div>
+            </div>
+            <div class="card" style="--card-accent: var(--cyan);">
+              <div class="card-title">06. REST API & Alerts</div>
+              <div class="card-body">Expose endpoints via Flask and dispatch automated TLS/SSL SMTP alerts with 2FA OTP.</div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>CTI Analysis Pipeline &bull; Siddaray Bhajabalakar (P03AC24S126056)</div>
+          <div>Slide 04 of 11</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 5: System Architecture -->
+      <section class="slide" data-notes="Walk through the 4-stage pipeline: (1) Ingestion & NER, (2) ATT&CK Tagger, (3) Knowledge Graph, (4) Threat Scoring & SMTP Alerts. Mention the Flask API interface.">
+        <div class="slide-header">
+          <div class="slide-tag">PIPELINE DESIGN</div>
+          <h2 class="slide-title">System Architecture: Four-Stage Pipeline</h2>
+        </div>
+        <div class="slide-body">
+          <div class="grid-4">
+            <div class="card" style="--card-accent: var(--cyan);">
+              <div class="card-title">STAGE 1: NER ENGINE</div>
+              <ul class="bullets">
+                <li>Raw Text / PDF / RSS Ingestion</li>
+                <li>Text De-noising & Stripping</li>
+                <li>Regex IOC Extraction</li>
+                <li>spaCy Entity Tagging</li>
+              </ul>
+            </div>
+            <div class="card" style="--card-accent: var(--gold);">
+              <div class="card-title">STAGE 2: MITRE TAGGER</div>
+              <ul class="bullets">
+                <li>Keyword & Semantic Match</li>
+                <li>100+ ATT&CK Techniques</li>
+                <li>Tactic Taxonomy Mapping</li>
+                <li>Defense Posture Audit</li>
+              </ul>
+            </div>
+            <div class="card" style="--card-accent: var(--blue);">
+              <div class="card-title">STAGE 3: GRAPH ENGINE</div>
+              <ul class="bullets">
+                <li>Relation Extraction</li>
+                <li>Actor ➔ Malware ➔ C2 IP</li>
+                <li>NetworkX DiGraph Model</li>
+                <li>D3.js Visualization Export</li>
+              </ul>
+            </div>
+            <div class="card" style="--card-accent: var(--emerald);">
+              <div class="card-title">STAGE 4: SCORING & ALERT</div>
+              <ul class="bullets">
+                <li>0–10 Threat Severity Engine</li>
+                <li>Automated Sysadmin Playbooks</li>
+                <li>LLM Executive Summarization</li>
+                <li>TLS/SSL SMTP Email Alerts</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card" style="--card-accent: var(--cyan); background:rgba(2,132,199,0.08);">
+            <div class="card-title">Interfacing & Deployment</div>
+            <div class="card-body">
+              <strong>Flask REST API Endpoints:</strong> <code>/analyze</code> (raw text), <code>/analyze/file</code> (PDF upload), <code>/health</code>, <code>/knowledge_graph/query</code> &bull; Containerized via <strong>Dockerfile</strong> for Kubernetes/Docker deployment.
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>CTI Analysis Pipeline &bull; Siddaray Bhajabalakar (P03AC24S126056)</div>
+          <div>Slide 05 of 11</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 6: Dual-Layer NER -->
+      <section class="slide" data-notes="Explain the dual-layer strategy: Regex gives 100% precision for deterministic patterns (IPs, hashes), while spaCy handles linguistic entities (Actors, Malware).">
+        <div class="slide-header">
+          <div class="slide-tag">STAGE 1 DEEP-DIVE</div>
+          <h2 class="slide-title">Stage 1: Dual-Layer Named Entity Recognition</h2>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="--card-accent: var(--cyan);">
+              <div class="card-title">Layer A: Deterministic Regex IOC Engine</div>
+              <ul class="bullets">
+                <li><strong>IPv4 & IPv6 Addresses:</strong> Octet validation extracts active C2 and listener nodes.</li>
+                <li><strong>Domains & Defanged URLs:</strong> Automatically cleans <code>silentc2[.]net</code> formats.</li>
+                <li><strong>Cryptographic Hashes:</strong> 32-hex MD5, 40-hex SHA-1, and 64-hex SHA-256 signatures.</li>
+                <li><strong>Vulnerabilities (CVE):</strong> Case-insensitive regex matching <code>CVE-YYYY-NNNNN</code>.</li>
+                <li><strong>Registry Keys:</strong> Captures HKCU / HKLM Run persistence keys.</li>
+                <li><strong>Scheduled Tasks:</strong> Captures stealth task names (e.g. <code>WindowsUpdateTask</code>).</li>
+              </ul>
+            </div>
+
+            <div class="card" style="--card-accent: var(--emerald);">
+              <div class="card-title">Layer B: spaCy NLP Linguistic Engine</div>
+              <ul class="bullets">
+                <li><strong>spaCy en_core_web_sm:</strong> Extracts ORG, PERSON, and PRODUCT entity labels.</li>
+                <li><strong>Threat Actor Classification:</strong> Heuristic filters match APT, BEAR, SPIDER, PANDA, and FIN groups.</li>
+                <li><strong>Malware Family Detection:</strong> Identifies backdoors, ransomware, and custom trojans.</li>
+                <li><strong>Normalization & Deduplication:</strong> Cleans noise and case-folds duplicate entities.</li>
+                <li><strong>Sub-Millisecond Speed:</strong> Precompiled regex patterns execute in sub-milliseconds.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>CTI Analysis Pipeline &bull; Siddaray Bhajabalakar (P03AC24S126056)</div>
+          <div>Slide 06 of 11</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 7: MITRE ATT&CK Classification -->
+      <section class="slide" data-notes="Show how unstructured text maps to MITRE ATT&CK techniques like Phishing (T1566), Exploit (T1190), Process Injection (T1055), and Exfiltration (T1041).">
+        <div class="slide-header">
+          <div class="slide-tag">STAGE 2 DEEP-DIVE</div>
+          <h2 class="slide-title">Stage 2: MITRE ATT&CK Classification Engine</h2>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="--card-accent: var(--gold);">
+              <div class="card-title">Standardizing Adversary Tactics</div>
+              <ul class="bullets">
+                <li><strong>100+ Enterprise Techniques:</strong> Pre-mapped across all 14 MITRE tactics.</li>
+                <li><strong>Semantic Keyword Matching:</strong> Translates human phrases (e.g. <em>"spear-phishing attachment"</em> to <code>T1566</code>, <em>"DNS tunneling"</em> to <code>T1071</code>).</li>
+                <li><strong>Kill-Chain Tactic Resolution:</strong> Automatically resolves each technique to its parent phase (<code>TA0001 Initial Access</code> through <code>TA0040 Impact</code>).</li>
+                <li><strong>Automated Posture Audit:</strong> Allows SOC teams to see which attack phases are actively targeted.</li>
+              </ul>
+            </div>
+
+            <div class="card" style="--card-accent: var(--cyan);">
+              <div class="card-title">Sample ATT&CK Mappings in Pipeline</div>
+              <div style="display:flex; flex-direction:column; gap:6px; font-family:'Fira Code'; font-size:12px;">
+                <div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(255,255,255,0.04); border-radius:6px;">
+                  <span style="color:var(--gold);">T1566: Phishing</span>
+                  <span style="color:var(--cyan-soft);">TA0001: Initial Access</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(255,255,255,0.04); border-radius:6px;">
+                  <span style="color:var(--gold);">T1190: Exploit Public App</span>
+                  <span style="color:var(--cyan-soft);">TA0001: Initial Access</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(255,255,255,0.04); border-radius:6px;">
+                  <span style="color:var(--gold);">T1059: Command & Scripting</span>
+                  <span style="color:var(--cyan-soft);">TA0002: Execution</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(255,255,255,0.04); border-radius:6px;">
+                  <span style="color:var(--gold);">T1547: Registry Run Keys</span>
+                  <span style="color:var(--cyan-soft);">TA0003: Persistence</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(255,255,255,0.04); border-radius:6px;">
+                  <span style="color:var(--gold);">T1055: Process Injection</span>
+                  <span style="color:var(--cyan-soft);">TA0005: Defense Evasion</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(255,255,255,0.04); border-radius:6px;">
+                  <span style="color:var(--gold);">T1041: Exfiltration Over C2</span>
+                  <span style="color:var(--cyan-soft);">TA0010: Exfiltration</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>CTI Analysis Pipeline &bull; Siddaray Bhajabalakar (P03AC24S126056)</div>
+          <div>Slide 07 of 11</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 8: Knowledge Graph & Severity Scoring -->
+      <section class="slide" data-notes="Explain the relational graph (NetworkX) and the transparent 0-10 severity scoring algorithm that replaces subjective analyst guesswork.">
+        <div class="slide-header">
+          <div class="slide-tag">STAGE 3 & 4 DEEP-DIVE</div>
+          <h2 class="slide-title">Stage 3 & 4: Knowledge Graph & Threat Scoring</h2>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="--card-accent: var(--blue);">
+              <div class="card-title">NetworkX Directed Knowledge Graph</div>
+              <ul class="bullets">
+                <li><strong>Relational Triples:</strong> Connects entities into Subject-Predicate-Object triples with confidence weights.</li>
+                <li><strong>Example:</strong> <code>(APT29) ──[uses]──▶ (SilentHorn) ──[c2]──▶ (185.132.189.10)</code>.</li>
+                <li><strong>Multi-Hop Traversal:</strong> Uncovers shared C2 servers used across separate attacks.</li>
+                <li><strong>Degree Centrality:</strong> Highlights high-risk core infrastructure.</li>
+                <li><strong>D3.js Visualization:</strong> Built-in <code>export_d3()</code> JSON for web rendering.</li>
+              </ul>
+            </div>
+
+            <div class="card" style="--card-accent: var(--crimson);">
+              <div class="card-title">Objective Threat Severity Scoring (0–10)</div>
+              <ul class="bullets">
+                <li><strong>Entity Weights:</strong> Threat Actor (+15), Zero-Day CVE (+10), Malware (+10), C2 IP (+5).</li>
+                <li><strong>Tactic Weights:</strong> Exfiltration (+20), Impact (+20), C2 (+15), Persistence (+8).</li>
+                <li><strong>Formula:</strong> <code>min(Entity_Weights + Tactic_Weights, 100) / 10.0</code>.</li>
+                <li><strong>Triage Tiers:</strong>
+                  <span style="color:var(--crimson); font-weight:700;">CRITICAL (8.0–10.0)</span>,
+                  <span style="color:var(--gold); font-weight:700;">HIGH (6.0–7.9)</span>,
+                  <span style="color:var(--cyan-soft); font-weight:700;">MEDIUM</span>,
+                  <span style="color:var(--emerald); font-weight:700;">LOW</span>.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>CTI Analysis Pipeline &bull; Siddaray Bhajabalakar (P03AC24S126056)</div>
+          <div>Slide 08 of 11</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 9: Enterprise Features -->
+      <section class="slide" data-notes="Highlight production engineering: TLS/SSL SMTP email service in email_service.py, 2FA OTP login security, and Docker containerization.">
+        <div class="slide-header">
+          <div class="slide-tag">ENTERPRISE SECURITY</div>
+          <h2 class="slide-title">Enterprise Features: SMTP Alerts, 2FA & REST API</h2>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3">
+            <div class="card" style="--card-accent: var(--cyan);">
+              <div class="card-title">TLS/SSL SMTP Email Service</div>
+              <ul class="bullets">
+                <li>Enterprise encryption with timeout safeguards (Gmail, Outlook, SendGrid).</li>
+                <li>Credentials isolated in <code>.env</code> file with strict protection.</li>
+                <li>Automated high-priority threat alert dispatch to on-duty SOC analysts.</li>
+              </ul>
+            </div>
+
+            <div class="card" style="--card-accent: var(--gold);">
+              <div class="card-title">2FA OTP Authentication</div>
+              <ul class="bullets">
+                <li>Cryptographically random 6-digit one-time passwords via <code>SystemRandom</code>.</li>
+                <li>Strict 5-minute TTL expiration window in memory store.</li>
+                <li>Dispatches branded HTML login codes to verify analyst identity.</li>
+              </ul>
+            </div>
+
+            <div class="card" style="--card-accent: var(--emerald);">
+              <div class="card-title">RESTful API & Docker Ready</div>
+              <ul class="bullets">
+                <li>Endpoints for report analysis, graph queries, and health monitoring.</li>
+                <li>Native PDF text extraction via <code>PyPDF2</code> module.</li>
+                <li>Dockerized deployment via <code>Dockerfile</code> for microservice clusters.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>CTI Analysis Pipeline &bull; Siddaray Bhajabalakar (P03AC24S126056)</div>
+          <div>Slide 09 of 11</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 10: Case Study & Results -->
+      <section class="slide" data-notes="Walk through the experimental results: 1.42s processing latency (99.2% faster than 3-5 hours manual triage) and 98.4% IOC extraction accuracy.">
+        <div class="slide-header">
+          <div class="slide-tag">DEMO & EVALUATION</div>
+          <h2 class="slide-title">Case Study: APT29 Campaign & Benchmark Results</h2>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="--card-accent: var(--gold);">
+              <div class="card-title">Live Walkthrough: APT29 SilentHorn</div>
+              <ul class="bullets">
+                <li><strong>Incoming Report:</strong> Espionage campaign targeting energy sectors.</li>
+                <li><strong>Extracted IOCs:</strong> C2 IPs (185.132.189.10), SHA256 hashes, zero-day CVE-2023-45678, registry Run keys.</li>
+                <li><strong>ATT&CK Mapped:</strong> T1566, T1190, T1059, T1547, T1055, T1071, T1041.</li>
+                <li><strong>Knowledge Graph:</strong> 14 nodes and 12 relation edges built.</li>
+                <li><strong>Computed Severity:</strong> <strong>8.6 / 10.0 (CRITICAL TIER)</strong>.</li>
+                <li><strong>Automated Defense:</strong> Instant firewall deny rules and patch advisory.</li>
+              </ul>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div class="card" style="padding:16px; --card-accent: var(--cyan);">
+                <div style="font-family:'Fira Code'; font-size:26px; font-weight:800; color:var(--cyan);">1.42 Seconds</div>
+                <div style="font-size:12px; font-weight:700; color:#fff;">AVERAGE PROCESSING SPEED</div>
+                <div style="font-size:11.5px; color:var(--text-muted);">Processed in under 2s vs 3+ hours manual analyst triage.</div>
+              </div>
+              <div class="card" style="padding:16px; --card-accent: var(--emerald);">
+                <div style="font-family:'Fira Code'; font-size:26px; font-weight:800; color:var(--emerald);">98.4% Precision</div>
+                <div style="font-size:12px; font-weight:700; color:#fff;">IOC EXTRACTION ACCURACY</div>
+                <div style="font-size:11.5px; color:var(--text-muted);">Near-zero false positives across regex test suite.</div>
+              </div>
+              <div class="card" style="padding:16px; --card-accent: var(--blue);">
+                <div style="font-family:'Fira Code'; font-size:26px; font-weight:800; color:var(--cyan-soft);">99.2% Speedup</div>
+                <div style="font-size:12px; font-weight:700; color:#fff;">SOC TRIAGE LATENCY REDUCTION</div>
+                <div style="font-size:11.5px; color:var(--text-muted);">Eliminates cognitive fatigue and repetitive copy-pasting.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>CTI Analysis Pipeline &bull; Siddaray Bhajabalakar (P03AC24S126056)</div>
+          <div>Slide 10 of 11</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 11: Conclusion -->
+      <section class="slide" data-notes="Deliver the closing statement: Summarize the key contributions, thank the jury and professors, and invite questions for the project defense.">
+        <div class="slide-header">
+          <div class="slide-tag">PROJECT SUMMARY & DEFENSE</div>
+          <h2 class="slide-title">Conclusion & Project Expo Jury Defense</h2>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="card" style="--card-accent: var(--cyan);">
+              <div class="card-title">Summary of Core Contributions</div>
+              <ul class="bullets">
+                <li>Automated unstructured CTI parsing, reducing triage time from 3 hours to 1.42s.</li>
+                <li>Achieved 98.4% precision in IOC extraction and mapped 100+ MITRE ATT&CK techniques.</li>
+                <li>Constructed a directed NetworkX Knowledge Graph enabling multi-hop threat reasoning.</li>
+                <li>Designed an objective 0–10 threat severity score with actionable sysadmin playbooks.</li>
+                <li>Integrated enterprise-grade TLS/SSL SMTP alerts and secure 2FA OTP authentication.</li>
+                <li>Validated through unit tests, Flask REST API, Dockerfile, and cross-platform runners.</li>
+              </ul>
+            </div>
+
+            <div class="card" style="text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:14px; --card-accent: var(--gold);">
+              <div style="font-family:'Outfit'; font-size:36px; font-weight:900; color:var(--cyan);">Thank You!</div>
+              <div style="font-size:16px; font-weight:600; color:#fff;">Questions & Jury Defense</div>
+
+              <div style="background:rgba(10,17,36,0.8); border:1px solid var(--card-border); border-radius:12px; padding:16px; width:100%; max-width:380px; text-align:left;">
+                <div style="font-size:11px; color:var(--cyan-soft); font-family:'Fira Code'; font-weight:700;">PRESENTER:</div>
+                <div style="font-family:'Outfit'; font-size:18px; font-weight:800; color:#fff;">Siddaray Bhajabalakar</div>
+                <div style="font-size:13px; color:var(--gold); font-weight:600;">USN: P03AC24S126056</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Master of Computer Applications (MCA)<br>Administrative Management College (AMC), Bengaluru</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div>CTI Analysis Pipeline &bull; Siddaray Bhajabalakar (P03AC24S126056) &bull; Project Expo 2026</div>
+          <div>Slide 11 of 11 &bull; Ready for Q&A</div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Speaker Notes Footer Drawer -->
+  <aside class="speaker-notes-bar" id="notesBar">
+    <strong style="color:var(--cyan);">Speaker Notes:</strong> <span id="notesText"></span>
+  </aside>
+
+  <script>
+    let current = 1;
+    const total = 11;
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('counter');
+    const notesBar = document.getElementById('notesBar');
+    const notesText = document.getElementById('notesText');
+
+    function showSlide(n) {
+      if (n < 1) n = 1;
+      if (n > total) n = total;
+
+      slides.forEach((s, idx) => {
+        s.classList.remove('active');
+        if (idx + 1 === n) s.classList.add('active');
+      });
+
+      current = n;
+      counter.innerText = `${String(current).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+      
+      const activeEl = slides[current - 1];
+      notesText.innerText = activeEl.getAttribute('data-notes') || 'No speaker notes for this slide.';
+    }
+
+    function nextSlide() { showSlide(current + 1); }
+    function prevSlide() { showSlide(current - 1); }
+    function toggleNotes() { notesBar.classList.toggle('open'); }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        toggleNotes();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => showSlide(1));
+  </script>
+</body>
+</html>

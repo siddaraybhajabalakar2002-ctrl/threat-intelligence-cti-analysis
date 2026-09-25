@@ -99,38 +99,13 @@
                     <!-- Notifications -->
                     <div class="notifications" id="notif-btn">
                         <i class="fa-regular fa-bell"></i>
-                        <span class="badge" id="notif-badge">3</span>
+                        <span class="badge" id="notif-badge">0</span>
                         <div id="notif-dropdown" class="topbar-dropdown notif-dropdown" style="display:none;">
-                            <div class="dropdown-header">Notifications <span style="float:right;font-size:11px;color:#38bdf8;cursor:pointer;" id="mark-all-read">Mark all read</span></div>
-                            <div class="notif-item unread">
-                                <div class="notif-icon red"><i class="fa-solid fa-circle-exclamation"></i></div>
-                                <div class="notif-body">
-                                    <p>High severity IOC matched in network logs</p>
-                                    <span>10 minutes ago</span>
-                                </div>
+                            <div class="dropdown-header">Cyber Threat News <span style="float:right;font-size:11px;color:#38bdf8;cursor:pointer;" id="refresh-news">Refresh</span></div>
+                            <div id="news-container">
+                                <!-- News items will be injected here via app.js -->
                             </div>
-                            <div class="notif-item unread">
-                                <div class="notif-icon yellow"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                                <div class="notif-body">
-                                    <p>APT29 campaign detected — new IOCs added</p>
-                                    <span>1 hour ago</span>
-                                </div>
-                            </div>
-                            <div class="notif-item unread">
-                                <div class="notif-icon blue"><i class="fa-solid fa-shield-halved"></i></div>
-                                <div class="notif-body">
-                                    <p>API rate limit approaching for Threat Feed</p>
-                                    <span>2 hours ago</span>
-                                </div>
-                            </div>
-                            <div class="notif-item">
-                                <div class="notif-icon green"><i class="fa-solid fa-check-circle"></i></div>
-                                <div class="notif-body">
-                                    <p>Knowledge Graph sync completed successfully</p>
-                                    <span>Yesterday</span>
-                                </div>
-                            </div>
-                            <div class="dropdown-footer" id="view-all-alerts-btn">View All Alerts</div>
+                            <div class="dropdown-footer" id="view-all-alerts-btn">View All News</div>
                         </div>
                     </div>
 
@@ -398,6 +373,9 @@
                     <button type="button" class="analyzer-tab-btn" data-view="output" id="tab-output-btn">
                         <i class="fa-solid fa-square-poll-vertical"></i> Output Tab <span class="tab-badge" id="output-badge-count" style="display:none;">0</span>
                     </button>
+                    <button class="analyzer-tab-btn" data-view="recommendations">
+                        <i class="fa-solid fa-shield-halved"></i> Security Recommendation
+                    </button>
                 </div>
 
                 <div class="header-sample-btns">
@@ -447,7 +425,19 @@
 
                     <!-- Dynamic Results Container -->
                     <div id="analysis-results" class="results-scroll-container" style="display: none;"></div>
+                </div>
 
+                <!-- 3. Security Recommendation Pane -->
+                <div class="split-pane pane-right" id="pane-recommendations">
+                    <div class="pane-header">
+                        <span class="pane-title"><i class="fa-solid fa-shield-halved" style="color:#10b981;"></i> Security Recommendations</span>
+                    </div>
+                    <div class="output-wrapper" id="recommendations-results-wrapper">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <p>No recommendations generated yet. Run analysis first.</p>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -554,7 +544,7 @@
     </div>
 
     <!-- Application Logic -->
-    <script src="{{ url_for('static', filename='app.js', v=101) }}"></script>
+    <script src="{{ url_for('static', filename='app.js', v=110) }}"></script>
 </body>
 </html>
 

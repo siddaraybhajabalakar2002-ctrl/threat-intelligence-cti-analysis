@@ -423,24 +423,48 @@ document.addEventListener('DOMContentLoaded', () => {
             ${(data.relations || []).length ? `
             <div class="section-block">
                 <h4><i class="fa-solid fa-diagram-project" style="color:#a855f7;"></i> Knowledge Graph Triples</h4>
-                <div style="max-height:140px; overflow-y:auto;">
-                    ${relationsHtml}
-                </div>
             </div>` : ''}
 
             <div class="section-block">
-                <h4><i class="fa-solid fa-clipboard-check" style="color:#10b981;"></i> Security Recommendations</h4>
-                ${(data.recommendations && data.recommendations.length > 0) ? `
-                <ul style="color:#cbd5e1; font-size:13px; margin: 8px 0 16px 20px;">
-                    ${data.recommendations.map(r => `<li>${r}</li>`).join('')}
-                </ul>
-                ` : ''}
-                
                 <h4><i class="fa-solid fa-user-pen" style="color:#38bdf8;"></i> Analyst Notes &amp; Actions Taken</h4>
                 <textarea class="cyber-input" placeholder="Enter additional actions taken or custom security recommendations..." style="width: 100%; height: 60px; margin-top: 10px; resize: vertical;"></textarea>
                 <button class="btn-primary mt-10" style="padding: 5px 10px; font-size: 12px;" onclick="alert('Analyst notes saved successfully!')"><i class="fa-solid fa-save"></i> Save Notes</button>
             </div>
         `;
+        
+        // Render Recommendations in the separate tab pane
+        const recWrapper = document.getElementById('recommendations-results-wrapper');
+        if (recWrapper) {
+            recWrapper.innerHTML = `
+                <div class="section-block" style="margin-top: 15px;">
+                    <div style="max-height: 450px; overflow-y: auto; padding-right: 5px;">
+                        ${(data.recommendations && data.recommendations.length > 0) ? data.recommendations.map(rec => {
+                            let color = '#38bdf8'; 
+                            if (rec.type === 'CRITICAL' || rec.type.includes('CRITICAL') || rec.type.includes('MALWARE')) color = '#ef4444';
+                            else if (rec.type === 'HIGH' || rec.type.includes('VULNERABILITY')) color = '#f97316';
+                            else if (rec.type.includes('THREAT ACTOR') || rec.type.includes('ACTOR')) color = '#a855f7';
+                            
+                            return `
+                            <div style="background: rgba(0,0,0,0.2); border-left: 3px solid ${color}; border-radius: 4px; padding: 15px; margin-bottom: 15px;">
+                                <h5 style="color: ${color}; margin-top: 0; margin-bottom: 10px; font-size: 13px; text-transform: uppercase;">${rec.type}</h5>
+                                <div style="margin-bottom: 12px;">
+                                    <strong style="color: var(--text-light); font-size: 12px;"><i class="fa-solid fa-brain" style="margin-right: 4px;"></i> Understanding:</strong>
+                                    <p style="color: var(--text-muted); font-size: 12px; margin: 4px 0 0 0;">${rec.understanding || ''}</p>
+                                </div>
+                                <div style="margin-bottom: 12px;">
+                                    <strong style="color: var(--text-light); font-size: 12px;"><i class="fa-solid fa-wrench" style="margin-right: 4px;"></i> Action Required:</strong>
+                                    <p style="color: #e2e8f0; font-size: 12px; margin: 4px 0 0 0; font-weight: 500;">${rec.explanation || ''}</p>
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-light); font-size: 12px;"><i class="fa-solid fa-list-check" style="margin-right: 4px; color:${color};"></i> How to Implement:</strong>
+                                    <p style="color: #cbd5e1; font-size: 12px; margin: 4px 0 0 0; white-space: pre-wrap;">${rec.how_to_do_it || 'No specific steps provided.'}</p>
+                                </div>
+                            </div>`;
+                        }).join('') : '<div class="empty-state"><i class="fa-solid fa-shield-halved"></i><p>No recommendations available.</p></div>'}
+                    </div>
+                </div>
+            `;
+        }
     }
 
     if (openBtn) openBtn.onclick = () => modal.style.display = 'flex';
@@ -485,6 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.normalizedTags = tagsArr;
 
                 renderAnalysisResults(data);
+
                 updateDashboard(data);
             })
             .catch(err => {
@@ -530,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.normalizedTags = tagsArr;
 
                 renderAnalysisResults(data);
+
                 updateDashboard(data);
             })
             .catch(err => {
@@ -990,4 +1016,61 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('reg-step-2').style.display = 'none';
         };
     }
+    // ─── NOTIFICATION NEWS FEED ──────────────────────────────────────────────
+    const notifBtn = document.getElementById('notif-btn');
+    const notifDropdown = document.getElementById('notif-dropdown');
+    const newsContainer = document.getElementById('news-container');
+    const notifBadge = document.getElementById('notif-badge');
+    const refreshNews = document.getElementById('refresh-news');
+
+    function fetchRecentNews() {
+        if (!newsContainer) return;
+        newsContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> Loading news...</div>';
+        
+        fetch('/api/news/recent')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.news && data.news.length > 0) {
+                    let html = '';
+                    data.news.forEach((item, index) => {
+                        let colorClass = index === 0 ? 'red' : (index === 1 ? 'yellow' : 'blue');
+                        let icon = index === 0 ? 'fa-fire' : 'fa-newspaper';
+                        html += `
+                            <a href="${item.link}" target="_blank" style="text-decoration:none;">
+                                <div class="notif-item unread" style="cursor:pointer; display:flex; padding:12px 15px; border-bottom:1px solid rgba(255,255,255,0.04);">
+                                    <div class="notif-icon ${colorClass}" style="margin-right:12px;"><i class="fa-solid ${icon}"></i></div>
+                                    <div class="notif-body">
+                                        <p style="color:#f8fafc; font-size:13px; margin-bottom:4px; line-height:1.4;">${item.title}</p>
+                                        <span style="color:#64748b; font-size:11px;">${item.date}</span>
+                                    </div>
+                                </div>
+                            </a>
+                        `;
+                    });
+                    newsContainer.innerHTML = html;
+                    if (notifBadge) {
+                        notifBadge.innerText = data.news.length;
+                        notifBadge.style.display = 'inline-block';
+                    }
+                } else {
+                    newsContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#64748b;">No recent news found.</div>';
+                }
+            })
+            .catch(err => {
+                console.error("Error fetching news:", err);
+                newsContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#ef4444;">Failed to load news.</div>';
+            });
+    }
+
+
+    if (refreshNews) {
+        refreshNews.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fetchRecentNews();
+        });
+    }
+    
+    // Initial fetch to set the badge count
+    fetchRecentNews();
+
 });
