@@ -139,48 +139,6 @@ def index():
 def health_check():
     return jsonify({"status": "healthy", "version": "1.0"})
 
-@app.route('/download/presentation', methods=['GET'])
-def download_presentation():
-    for candidate in [
-        os.path.join(_proj_dir, "CTI_Project_Expo_Presentation.pptx"),
-        os.path.join(os.path.dirname(_proj_dir), "CTI_Project_Expo_Presentation.pptx"),
-        os.path.join(_proj_dir, "threat-intelligence-cti-analysis-main", "CTI_Project_Expo_Presentation.pptx")
-    ]:
-        if os.path.exists(candidate):
-            return send_file(candidate, as_attachment=True, download_name="CTI_Project_Expo_Presentation.pptx")
-    return jsonify({"error": "Presentation file not found"}), 404
-
-@app.route('/presentation', methods=['GET'])
-def view_expo_presentation():
-    for candidate in [
-        os.path.join(_proj_dir, "cti_expo_presentation.html"),
-        os.path.join(os.path.dirname(_proj_dir), "cti_expo_presentation.html"),
-        os.path.join(_proj_dir, "threat-intelligence-cti-analysis-main", "cti_expo_presentation.html")
-    ]:
-        if os.path.exists(candidate):
-            return send_file(candidate)
-    return jsonify({"error": "Presentation HTML not found"}), 404
-
-@app.route('/download/poster', methods=['GET'])
-def download_poster():
-    for candidate in [
-        os.path.join(_proj_dir, "CTI_Poster_A3.pptx"),
-        os.path.join(os.path.dirname(_proj_dir), "CTI_Poster_A3.pptx")
-    ]:
-        if os.path.exists(candidate):
-            return send_file(candidate, as_attachment=True, download_name="CTI_Poster_A3.pptx")
-    return jsonify({"error": "Poster PPTX not found"}), 404
-
-@app.route('/poster', methods=['GET'])
-def view_poster():
-    for candidate in [
-        os.path.join(_proj_dir, "cti_poster_a3.html"),
-        os.path.join(os.path.dirname(_proj_dir), "cti_poster_a3.html")
-    ]:
-        if os.path.exists(candidate):
-            return send_file(candidate)
-    return jsonify({"error": "Poster HTML not found"}), 404
-
 @app.route('/analyze', methods=['POST'])
 def analyze_report():
     data = request.json
