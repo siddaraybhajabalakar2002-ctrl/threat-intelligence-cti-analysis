@@ -278,18 +278,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetView) {
                 targetView.style.display = (viewId === 'view-dashboard') ? 'grid' : 'block';
                 
-                // Initialize full graph if needed
-                if (viewId === 'view-knowledge-graph' && !fullGraphInitialized) {
-                    fullGraphInitialized = true;
+                // Initialize or dynamically refresh full graph
+                if (viewId === 'view-knowledge-graph') {
+                    const colorMap = {
+                        'ThreatActor': '#ef4444',
+                        'Malware': '#f59e0b',
+                        'IPAddress': '#06b6d4',
+                        'Domain': '#8b5cf6',
+                        'URL': '#3b82f6',
+                        'CVE': '#ec4899',
+                        'Technique': '#38bdf8',
+                        'Tactic': '#10b981',
+                        'Persistence': '#f97316',
+                        'Hash': '#64748b'
+                    };
                     fetch('/knowledge_graph/data')
                         .then(r => r.json())
                         .then(gData => {
-                            ForceGraph3D()(document.getElementById('fullGraph'))
-                                .graphData(gData)
-                                .nodeLabel('id')
-                                .nodeColor(n => n.group === 'ThreatActor' ? '#ef4444' : (n.group === 'Malware' ? '#f59e0b' : '#3b82f6'))
-                                .linkColor(() => 'rgba(255,255,255,0.2)')
-                                .backgroundColor('#111a24');
+                            const graphContainer = document.getElementById('fullGraph');
+                            if (!window.fullGraphInstance && graphContainer) {
+                                window.fullGraphInstance = ForceGraph3D()(graphContainer)
+                                    .nodeLabel(n => `${n.name || n.id} [${n.group || 'Entity'}]`)
+                                    .nodeColor(n => colorMap[n.group] || '#94a3b8')
+                                    .linkColor(() => 'rgba(255,255,255,0.25)')
+                                    .backgroundColor('#111a24');
+                            }
+                            if (window.fullGraphInstance) {
+                                window.fullGraphInstance.graphData(gData);
+                            }
                         })
                         .catch(err => console.error("Error loading full graph:", err));
                 }
@@ -781,10 +797,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // AUTH MODAL & OTP PASSWORDLESS AUTH LOGIC
     // =========================================================================
+    // =========================================================================
+    // AUTHENTICATION, CREDENTIAL RETENTION, EXISTING USERS & LOGOUT
+    // =========================================================================
     const userProfileBtn = document.getElementById('user-profile-btn');
     const authModal = document.getElementById('auth-modal');
     const closeAuthModal = document.getElementById('close-auth-modal');
     const authAlert = document.getElementById('auth-alert');
+    const topbarLogoutBtn = document.getElementById('topbar-logout-btn');
+    const modalLogoutBtn = document.getElementById('modal-logout-btn');
+    const modalSwitchAccountBtn = document.getElementById('modal-switch-account-btn');
+    const loginBannerLogoutBtn = document.getElementById('login-banner-logout-btn');
+    const profileTabBtn = document.getElementById('profile-tab-btn');
+
+    const STORAGE_KEY_ACTIVE_USER = 'cti_current_user';
+    const STORAGE_KEY_REMEMBERED_EMAIL = 'cti_remembered_email';
+    const STORAGE_KEY_SAVED_ACCOUNTS = 'cti_saved_accounts';
+
+    let registeredUsersList = [];
 
     function showAlert(message, isSuccess = true) {
         if (!authAlert) return;
@@ -797,20 +827,122 @@ document.addEventListener('DOMContentLoaded', () => {
         if (authAlert) authAlert.style.display = 'none';
     }
 
-    if (userProfileBtn && authModal) {
-        userProfileBtn.onclick = () => {
-            hideAlert();
-            authModal.style.display = 'block';
-        };
+    // ─── LocalStorage Session & Credential Helpers ───────────────────────────
+    function getActiveUser() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_USER);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
     }
 
-    if (closeAuthModal && authModal) {
-        closeAuthModal.onclick = () => {
-            authModal.style.display = 'none';
+    function setActiveUser(user) {
+        if (!user) return;
+        const session = {
+            username: user.username,
+            email: user.email,
+            loginTime: user.loginTime || new Date().toISOString()
         };
-    }    // Tab Switching — reset steps on tab change
+        localStorage.setItem(STORAGE_KEY_ACTIVE_USER, JSON.stringify(session));
+        saveAccountToHistory(session.email, session.username);
+
+        const rememberMeCheck = document.getElementById('login-remember-me');
+        if (!rememberMeCheck || rememberMeCheck.checked) {
+            localStorage.setItem(STORAGE_KEY_REMEMBERED_EMAIL, session.email);
+        }
+        renderUserState(session);
+    }
+
+    function clearActiveUser() {
+        localStorage.removeItem(STORAGE_KEY_ACTIVE_USER);
+        renderUserState(null);
+    }
+
+    function saveAccountToHistory(email, username) {
+        try {
+            let history = JSON.parse(localStorage.getItem(STORAGE_KEY_SAVED_ACCOUNTS) || '[]');
+            const idx = history.findIndex(item => item.email.toLowerCase() === email.toLowerCase());
+            if (idx >= 0) {
+                history[idx].username = username;
+                history[idx].lastLogin = new Date().toISOString();
+            } else {
+                history.push({ email, username, lastLogin: new Date().toISOString() });
+            }
+            localStorage.setItem(STORAGE_KEY_SAVED_ACCOUNTS, JSON.stringify(history));
+        } catch (e) {}
+    }
+
+    // ─── Render Active User in UI (Topbar & Modal) ───────────────────────────
+    function renderUserState(user) {
+        const userDisplayName = document.getElementById('user-display-name');
+        const userDisplayRole = document.getElementById('user-display-role');
+        const userStatusDot = document.getElementById('user-status-dot');
+        const loginActiveBanner = document.getElementById('login-active-banner');
+        const loginActiveBannerUser = document.getElementById('login-active-banner-user');
+        const profileCardName = document.getElementById('profile-card-name');
+        const profileCardEmail = document.getElementById('profile-card-email');
+        const profileCardSessionTime = document.getElementById('profile-card-session-time');
+
+        if (user) {
+            if (userDisplayName) userDisplayName.innerText = user.username;
+            if (userDisplayRole) userDisplayRole.innerText = user.email;
+            if (userProfileBtn) {
+                userProfileBtn.classList.add('logged-in');
+                userProfileBtn.title = `Logged in as ${user.username} (${user.email}) - Click to view account / logout`;
+            }
+            if (userStatusDot) userStatusDot.style.display = 'block';
+            if (topbarLogoutBtn) topbarLogoutBtn.style.display = 'inline-flex';
+            if (profileTabBtn) profileTabBtn.style.display = 'inline-flex';
+
+            if (profileCardName) profileCardName.innerText = user.username;
+            if (profileCardEmail) profileCardEmail.innerText = user.email;
+            if (profileCardSessionTime && user.loginTime) {
+                const dateObj = new Date(user.loginTime);
+                profileCardSessionTime.innerText = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' (' + dateObj.toLocaleDateString() + ')';
+            }
+            if (loginActiveBanner) {
+                loginActiveBanner.style.display = 'flex';
+                if (loginActiveBannerUser) loginActiveBannerUser.innerText = `${user.username} (${user.email})`;
+            }
+        } else {
+            if (userDisplayName) userDisplayName.innerText = 'Sign In';
+            if (userDisplayRole) userDisplayRole.innerText = 'Account & SMTP';
+            if (userProfileBtn) {
+                userProfileBtn.classList.remove('logged-in');
+                userProfileBtn.title = 'Click to Sign In / Register';
+            }
+            if (userStatusDot) userStatusDot.style.display = 'none';
+            if (topbarLogoutBtn) topbarLogoutBtn.style.display = 'none';
+            if (profileTabBtn) profileTabBtn.style.display = 'none';
+            if (loginActiveBanner) loginActiveBanner.style.display = 'none';
+        }
+    }
+
+    // ─── Modal Tab Switching ─────────────────────────────────────────────────
     const tabBtns = document.querySelectorAll('.auth-tab-btn');
     const tabContents = document.querySelectorAll('.auth-tab-content');
+
+    function switchAuthTab(tabId) {
+        hideAlert();
+        tabBtns.forEach(b => {
+            if (b.getAttribute('data-tab') === tabId) {
+                b.classList.add('active');
+            } else {
+                b.classList.remove('active');
+            }
+        });
+        tabContents.forEach(c => {
+            c.style.display = (c.id === tabId) ? 'block' : 'none';
+        });
+    }
+
+    tabBtns.forEach(btn => {
+        btn.onclick = () => {
+            resetSteps();
+            switchAuthTab(btn.getAttribute('data-tab'));
+        };
+    });
 
     function resetSteps() {
         const ls1 = document.getElementById('login-step-1');
@@ -823,17 +955,194 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rs2) rs2.style.display = 'none';
     }
 
-    tabBtns.forEach(btn => {
-        btn.onclick = () => {
-            hideAlert();
-            resetSteps();
-            tabBtns.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(c => c.style.display = 'none');
-            btn.classList.add('active');
-            const targetTab = document.getElementById(btn.getAttribute('data-tab'));
-            if (targetTab) targetTab.style.display = 'block';
+    // ─── Existing Users Fetch & Render ───────────────────────────────────────
+    function fetchExistingUsers() {
+        const listEl = document.getElementById('existing-users-list');
+        const countEl = document.getElementById('existing-users-count');
+        if (!listEl) return;
+
+        fetch('/api/auth/users')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.users)) {
+                    registeredUsersList = data.users;
+                    if (countEl) countEl.innerText = `${data.users.length} user${data.users.length === 1 ? '' : 's'}`;
+
+                    if (data.users.length === 0) {
+                        listEl.innerHTML = `<div style="font-size:12px; color:#64748b; padding:4px 0;">No registered users found. Switch to Register to create an account.</div>`;
+                        return;
+                    }
+
+                    let html = '';
+                    data.users.forEach(u => {
+                        const initial = (u.username || u.email).charAt(0).toUpperCase();
+                        html += `
+                            <div class="existing-user-chip" data-email="${u.email}" data-username="${u.username || ''}" title="Click to auto-fill ${u.email}">
+                                <div class="user-meta">
+                                    <div class="user-avatar-mini">${initial}</div>
+                                    <div class="user-names">
+                                        <span class="name-text">${u.username || 'Analyst'}</span>
+                                        <span class="email-text">${u.email}</span>
+                                    </div>
+                                </div>
+                                <span class="use-btn"><i class="fa-solid fa-arrow-right"></i> Fill</span>
+                            </div>
+                        `;
+                    });
+                    listEl.innerHTML = html;
+
+                    // Bind click listeners on chips to fill credentials
+                    listEl.querySelectorAll('.existing-user-chip').forEach(chip => {
+                        chip.onclick = () => {
+                            const email = chip.getAttribute('data-email');
+                            const emailInput = document.getElementById('login-email');
+                            if (emailInput) {
+                                emailInput.value = email;
+                                emailInput.focus();
+                                checkEmailMatch(email);
+                            }
+                            listEl.querySelectorAll('.existing-user-chip').forEach(c => c.classList.remove('selected'));
+                            chip.classList.add('selected');
+                        };
+                    });
+
+                    // Trigger live check on current email field value
+                    const emailInput = document.getElementById('login-email');
+                    if (emailInput && emailInput.value.trim()) {
+                        checkEmailMatch(emailInput.value.trim());
+                    }
+                }
+            })
+            .catch(err => {
+                console.error("Failed to load existing users:", err);
+                if (countEl) countEl.innerText = `0`;
+            });
+    }
+
+    // ─── Real-Time Live Email Matching ───────────────────────────────────────
+    function checkEmailMatch(email) {
+        const feedbackEl = document.getElementById('login-email-feedback');
+        if (!feedbackEl) return;
+        const trimmed = email.trim().toLowerCase();
+        if (!trimmed) {
+            feedbackEl.style.display = 'none';
+            return;
+        }
+
+        const match = registeredUsersList.find(u => u.email.toLowerCase() === trimmed);
+        if (match) {
+            feedbackEl.className = 'login-feedback match';
+            feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> Registered Account: <strong>${match.username}</strong> (${match.email})`;
+            feedbackEl.style.display = 'flex';
+        } else if (trimmed.includes('@') && trimmed.includes('.')) {
+            feedbackEl.className = 'login-feedback unmatched';
+            feedbackEl.innerHTML = `<i class="fa-solid fa-circle-info"></i> Account not found. <a href="#" id="link-quick-reg" style="color:#38bdf8; text-decoration:underline; margin-left:4px;">Click to register</a>`;
+            feedbackEl.style.display = 'flex';
+
+            const quickRegLink = document.getElementById('link-quick-reg');
+            if (quickRegLink) {
+                quickRegLink.onclick = (e) => {
+                    e.preventDefault();
+                    switchAuthTab('register-tab');
+                    const regEmail = document.getElementById('reg-email');
+                    if (regEmail) regEmail.value = trimmed;
+                };
+            }
+        } else {
+            feedbackEl.style.display = 'none';
+        }
+    }
+
+    const loginEmailInput = document.getElementById('login-email');
+    if (loginEmailInput) {
+        loginEmailInput.addEventListener('input', (e) => {
+            checkEmailMatch(e.target.value);
+        });
+    }
+
+    // ─── Restore Credentials on Init ─────────────────────────────────────────
+    function restoreLoginCredentials() {
+        const savedEmail = localStorage.getItem(STORAGE_KEY_REMEMBERED_EMAIL);
+        const loginEmail = document.getElementById('login-email');
+        const savedHint = document.getElementById('login-saved-hint');
+
+        if (savedEmail && loginEmail) {
+            loginEmail.value = savedEmail;
+            if (savedHint) savedHint.style.display = 'inline-flex';
+            checkEmailMatch(savedEmail);
+        }
+    }
+
+    const clearSavedCredsBtn = document.getElementById('clear-saved-creds-btn');
+    if (clearSavedCredsBtn) {
+        clearSavedCredsBtn.onclick = (e) => {
+            e.preventDefault();
+            localStorage.removeItem(STORAGE_KEY_REMEMBERED_EMAIL);
+            const loginEmail = document.getElementById('login-email');
+            if (loginEmail) loginEmail.value = '';
+            const savedHint = document.getElementById('login-saved-hint');
+            if (savedHint) savedHint.style.display = 'none';
+            const feedbackEl = document.getElementById('login-email-feedback');
+            if (feedbackEl) feedbackEl.style.display = 'none';
+            showAlert('Cleared saved login email from device.', true);
         };
-    });
+    }
+
+    // ─── Open Profile / Login Modal ──────────────────────────────────────────
+    if (userProfileBtn && authModal) {
+        userProfileBtn.onclick = () => {
+            const user = getActiveUser();
+            if (user) {
+                // If user is already logged in, show their profile view!
+                hideAlert();
+                resetSteps();
+                fetchExistingUsers();
+                restoreLoginCredentials();
+                renderUserState(user);
+                switchAuthTab('profile-tab');
+                authModal.style.display = 'block';
+            } else {
+                // If unauthenticated, redirect directly to the login page
+                window.location.href = '/login';
+            }
+        };
+    }
+
+    if (closeAuthModal && authModal) {
+        closeAuthModal.onclick = () => {
+            authModal.style.display = 'none';
+        };
+    }
+
+    // ─── LOGOUT HANDLER (Common for topbar, modal & banner) ───────────────────
+    function handleLogout() {
+        const user = getActiveUser();
+        fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user ? user.email : '' })
+        }).catch(() => {});
+
+        clearActiveUser();
+        // Redirect directly to the login page as requested
+        window.location.href = '/login?status=logged_out';
+    }
+
+    if (topbarLogoutBtn) topbarLogoutBtn.onclick = handleLogout;
+    if (modalLogoutBtn) modalLogoutBtn.onclick = handleLogout;
+    if (loginBannerLogoutBtn) loginBannerLogoutBtn.onclick = handleLogout;
+
+    if (modalSwitchAccountBtn) {
+        modalSwitchAccountBtn.onclick = () => {
+            handleLogout();
+        };
+    }
+
+    // ─── Initialize Active Session on Page Load ──────────────────────────────
+    const initialUser = getActiveUser();
+    renderUserState(initialUser);
+    restoreLoginCredentials();
+    fetchExistingUsers();
 
     // ─── LOGIN Step 1: Send OTP ───────────────────────────────────────────────
     const formLoginEmail = document.getElementById('form-login-email');
@@ -884,10 +1193,14 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    showAlert(`✅ ${data.message}`, true);
-                    document.getElementById('user-display-name').innerText = data.user.username;
-                    document.getElementById('user-display-role').innerText = data.user.email;
-                    setTimeout(() => { authModal.style.display = 'none'; }, 1500);
+                    // Persist session & credentials in browser
+                    const user = { username: data.user.username, email: data.user.email, loginTime: new Date().toISOString() };
+                    setActiveUser(user);
+
+                    showAlert(`✅ ${data.message} Welcome back, <strong>${data.user.username}</strong>!`, true);
+                    setTimeout(() => {
+                        authModal.style.display = 'none';
+                    }, 1400);
                 } else {
                     showAlert(`❌ ${data.error}`, false);
                 }
@@ -973,14 +1286,19 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    // Persist session & credentials in browser
+                    const user = { username: data.user.username, email: data.user.email, loginTime: new Date().toISOString() };
+                    setActiveUser(user);
+                    fetchExistingUsers();
+
                     let msg = `✅ ${data.message}`;
                     if (data.email_status && data.email_status.success) {
                         msg += `<br>📧 <strong>Welcome Email Dispatched!</strong>`;
                     }
                     showAlert(msg, true);
-                    document.getElementById('user-display-name').innerText = data.user.username;
-                    document.getElementById('user-display-role').innerText = data.user.email;
-                    setTimeout(() => { authModal.style.display = 'none'; }, 2000);
+                    setTimeout(() => {
+                        authModal.style.display = 'none';
+                    }, 1800);
                 } else {
                     showAlert(`❌ ${data.error}`, false);
                 }

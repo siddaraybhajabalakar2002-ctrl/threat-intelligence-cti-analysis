@@ -3,10 +3,12 @@ class ThreatScorer:
         # Weights for different entity types
         self.entity_weights = {
             'threat_actor': 15,
-            'malware': 10,
+            'malware': 12,
             'cve': 10,
             'ip_address': 5,
             'domain': 5,
+            'url': 5,
+            'email': 3,
             'hash_sha256': 2,
             'hash_md5': 2,
             'hash_sha1': 2,
@@ -16,26 +18,28 @@ class ThreatScorer:
         
         # Weights for MITRE Tactics (higher for actual impact/exfil)
         self.tactic_weights = {
-            'TA0010': 20, # Exfiltration
             'TA0040': 20, # Impact
+            'TA0010': 20, # Exfiltration
             'TA0011': 15, # Command and Control
             'TA0006': 15, # Credential Access
-            'TA0008': 10, # Lateral Movement
+            'TA0008': 12, # Lateral Movement
+            'TA0004': 10, # Privilege Escalation
             'TA0005': 10, # Defense Evasion
             'TA0003': 8,  # Persistence
-            'TA0004': 8,  # Privilege Escalation
-            'TA0002': 5,  # Execution
+            'TA0002': 6,  # Execution
             'TA0001': 5,  # Initial Access
             'TA0009': 5,  # Collection
             'TA0007': 5,  # Discovery
+            'TA0042': 4,  # Resource Development
+            'TA0043': 4,  # Reconnaissance
         }
 
-    def calculate_severity(self, entities, attack_tags):
+    def calculate_severity(self, entities: dict, attack_tags: dict) -> dict:
         score = 0
         
-        # 1. Score based on Entities
+        # 1. Score based on Entities (ensure non-empty lists)
         for entity_type, items in entities.items():
-            if entity_type in self.entity_weights:
+            if items and entity_type in self.entity_weights:
                 # Add base weight for the presence of the type + small bonus for multiple
                 weight = self.entity_weights[entity_type]
                 score += weight + (len(items) * (weight * 0.1))

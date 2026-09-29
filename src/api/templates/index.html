@@ -16,7 +16,7 @@
     <!-- 3D Force Graph -->
     <script src="https://unpkg.com/3d-force-graph"></script>
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=101) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=102) }}">
 </head>
 <body>
     <div class="app-container">
@@ -109,13 +109,21 @@
                         </div>
                     </div>
 
-                    <div class="user-profile" id="user-profile-btn" style="cursor: pointer;" title="Click to Sign In / Register">
-                        <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                    <div class="user-profile" id="user-profile-btn" style="cursor: pointer;" title="Click to view Account / Login">
+                        <div class="avatar">
+                            <i class="fa-solid fa-user" id="user-avatar-icon"></i>
+                            <span class="user-status-dot" id="user-status-dot" style="display:none;"></span>
+                        </div>
                         <div class="user-info">
                             <span class="name" id="user-display-name">Sign In</span>
                             <span class="role" id="user-display-role">Account &amp; SMTP</span>
                         </div>
                     </div>
+                    <!-- Dedicated Topbar Logout Button -->
+                    <button id="topbar-logout-btn" class="topbar-logout-btn" title="Sign Out / Logout" style="display: none;">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Logout</span>
+                    </button>
                 </div>
             </header>
 
@@ -449,12 +457,56 @@
         <div class="modal-content panel auth-card">
             <span id="close-auth-modal" class="close-modal"><i class="fa-solid fa-xmark"></i></span>
 
-            <div class="auth-tabs">
+            <div class="auth-tabs" id="auth-modal-tabs">
                 <button class="auth-tab-btn active" data-tab="login-tab"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
                 <button class="auth-tab-btn" data-tab="register-tab"><i class="fa-solid fa-user-plus"></i> Register</button>
+                <button class="auth-tab-btn" id="profile-tab-btn" data-tab="profile-tab" style="display:none;"><i class="fa-solid fa-user-shield"></i> Profile</button>
             </div>
 
             <div id="auth-alert" class="auth-alert" style="display: none;"></div>
+
+            <!-- ===================== LOGGED-IN PROFILE TAB ===================== -->
+            <div id="profile-tab" class="auth-tab-content" style="display: none;">
+                <div class="profile-card-container">
+                    <div class="profile-avatar-wrap">
+                        <div class="profile-avatar-large">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <span class="profile-online-badge"><i class="fa-solid fa-circle"></i> Authenticated Session</span>
+                    </div>
+
+                    <h2 id="profile-card-name" class="profile-title">Active User</h2>
+                    <p id="profile-card-email" class="profile-subtitle">user@domain.com</p>
+
+                    <div class="profile-meta-grid">
+                        <div class="profile-meta-item">
+                            <span class="meta-label">Access Clearance</span>
+                            <span class="meta-value text-accent"><i class="fa-solid fa-id-badge"></i> CTI Analyst</span>
+                        </div>
+                        <div class="profile-meta-item">
+                            <span class="meta-label">Account Status</span>
+                            <span class="meta-value text-success"><i class="fa-solid fa-circle-check"></i> Verified</span>
+                        </div>
+                        <div class="profile-meta-item">
+                            <span class="meta-label">Session Started</span>
+                            <span class="meta-value" id="profile-card-session-time">Active Now</span>
+                        </div>
+                        <div class="profile-meta-item">
+                            <span class="meta-label">Device Security</span>
+                            <span class="meta-value text-info"><i class="fa-solid fa-hard-drive"></i> Creds Saved</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-actions" style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
+                        <button type="button" id="modal-logout-btn" class="btn-danger-cyber" style="width:100%; justify-content:center;">
+                            <i class="fa-solid fa-right-from-bracket"></i> Sign Out / Logout
+                        </button>
+                        <button type="button" id="modal-switch-account-btn" class="btn-secondary" style="width:100%; justify-content:center;">
+                            <i class="fa-solid fa-users"></i> Switch / Sign In As Another User
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <!-- ===================== LOGIN TAB ===================== -->
             <div id="login-tab" class="auth-tab-content active">
@@ -462,12 +514,47 @@
                 <!-- Step 1: Enter Email -->
                 <div id="login-step-1">
                     <h2 style="margin-top:15px; color:#f8fafc;">Welcome Back</h2>
-                    <p class="auth-subtitle" style="color:#94a3b8; margin-bottom:20px; font-size:14px;">Enter your email to receive a one-time login code</p>
-                    <form id="form-login-email">
-                        <div class="form-group" style="margin-bottom:20px;">
-                            <label style="display:block; color:#cbd5e1; font-size:13px; margin-bottom:5px;"><i class="fa-solid fa-envelope"></i> Email Address</label>
-                            <input type="email" id="login-email" class="cyber-input" placeholder="name@company.com" required style="width:100%;">
+                    <p class="auth-subtitle" style="color:#94a3b8; margin-bottom:14px; font-size:14px;">Sign in with your registered account</p>
+
+                    <!-- Active Session Banner if already signed in -->
+                    <div id="login-active-banner" class="active-session-banner" style="display:none;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>
+                            <span>Currently signed in as <strong id="login-active-banner-user">User</strong></span>
                         </div>
+                        <button type="button" id="login-banner-logout-btn" class="btn-mini-danger">Sign Out</button>
+                    </div>
+
+                    <!-- Existing Registered Users Box -->
+                    <div class="existing-users-box" id="existing-users-box">
+                        <div class="existing-users-header">
+                            <span><i class="fa-solid fa-users" style="color:#38bdf8;"></i> Existing Registered Users</span>
+                            <span class="badge-count" id="existing-users-count">Loading...</span>
+                        </div>
+                        <p class="existing-users-hint">Click an account below to quickly auto-fill credentials:</p>
+                        <div class="existing-users-list" id="existing-users-list">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <form id="form-login-email">
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                <label style="color:#cbd5e1; font-size:13px;"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                                <span id="login-saved-hint" style="font-size:11px; color:#38bdf8; display:none;"><i class="fa-solid fa-clock-rotate-left"></i> Restored</span>
+                            </div>
+                            <input type="email" id="login-email" class="cyber-input" placeholder="name@company.com" required style="width:100%;" autocomplete="email">
+                            <div id="login-email-feedback" class="login-feedback" style="display:none;"></div>
+                        </div>
+
+                        <div class="remember-me-row" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:#94a3b8; user-select:none;">
+                                <input type="checkbox" id="login-remember-me" checked style="accent-color:#38bdf8; width:15px; height:15px; cursor:pointer;">
+                                <span>Remember my login details</span>
+                            </label>
+                            <a href="#" id="clear-saved-creds-btn" style="font-size:11px; color:#64748b; text-decoration:none;" title="Clear remembered login email">Clear saved</a>
+                        </div>
+
                         <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
                             <i class="fa-solid fa-paper-plane"></i> Send Login Code
                         </button>
@@ -544,7 +631,7 @@
     </div>
 
     <!-- Application Logic -->
-    <script src="{{ url_for('static', filename='app.js', v=110) }}"></script>
+    <script src="{{ url_for('static', filename='app.js', v=115) }}"></script>
 </body>
 </html>
 

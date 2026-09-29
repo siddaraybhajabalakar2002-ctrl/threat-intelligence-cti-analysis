@@ -13,6 +13,18 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr, make_msgid, formatdate
 from typing import Optional, Dict, Any
 
+try:
+    from dotenv import load_dotenv
+    # Load .env from project root
+    _proj_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    _env_file = os.path.join(_proj_root, ".env")
+    if os.path.exists(_env_file):
+        load_dotenv(_env_file, override=False)
+    else:
+        load_dotenv(override=False)
+except ImportError:
+    pass
+
 # Configure logger for email service
 logger = logging.getLogger("EmailService")
 if not logger.handlers:
@@ -60,7 +72,7 @@ class EmailService:
 
         self.from_email = from_email or os.getenv("SMTP_FROM_EMAIL", "noreply@example.com")
         self.from_name = from_name or os.getenv("SMTP_FROM_NAME", "Security Alert System")
-        self.timeout = int(timeout or os.getenv("SMTP_TIMEOUT", "10"))
+        self.timeout = int(timeout or os.getenv("SMTP_TIMEOUT", "30"))
 
     @staticmethod
     def validate_email(email_address: str) -> bool:

@@ -56,7 +56,7 @@ def run_dataset_pipeline(quick_mode: bool = False, limit_ingest: int = 50):
 
         entities = ner_extractor.extract_all_entities(text)
         attack_tags = attack_tagger.tag_report(text)
-        relations = relation_extractor.extract_all_relations(text)
+        relations = relation_extractor.extract_all_relations(text, entities)
 
         kg.add_entities_from_ner(entities)
         kg.add_entities_from_attack_tags(attack_tags)
