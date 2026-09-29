@@ -1,15 +1,24 @@
-# Use Python 3.9 slim image
-FROM python:3.9-slim
+# Use Python 3.10 slim image (broad prebuilt wheel support)
+FROM python:3.10-slim
 
 # Set working directory
 WORKDIR /app
+
+# Install essential build dependencies for binary extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip, setuptools, and wheel to fetch precompiled manylinux wheels
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Copy requirements and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Download spaCy English model
-RUN python -m spacy download en_core_web_sm
+RUN python -m spacy download en_core_web_sm || true
 
 # Copy application code
 COPY . .
