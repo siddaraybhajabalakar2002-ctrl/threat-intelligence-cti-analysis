@@ -6,10 +6,12 @@
 
 This project implements a comprehensive pipeline for analyzing Cyber Threat Intelligence (CTI) reports using Natural Language Processing (NLP) and Large Language Models (LLMs). The pipeline automatically extracts indicators of compromise (IOCs), tags MITRE ATT&CK techniques, builds knowledge graphs from unstructured CTI reports, and provides an API for integration with security tools.
 
-**Developed by: Siddaray Bhajabalakar**
-**USN:** P03AC24S126056
-**Course & College:** Master of Computer Applications, Administrative Management College
-**Academic Year:** 2025-2026
+> **Attribution**: Based on the original open-source project by [Anand Binu Arjun](https://github.com/AnandBinuArjun/threat-intelligence-cti-analysis).
+
+**Developed & Extended by:** Siddaray Bhajabalakar  
+**USN:** P03AC24S126056  
+**Course & College:** Master of Computer Applications, Administrative Management College  
+**Academic Year:** 2025-2026  
 
 ## 🚀 Features
 
@@ -322,6 +324,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
+- **Original Project & Base Architecture**: Based on the open-source pipeline created by [Anand Binu Arjun](https://github.com/AnandBinuArjun/threat-intelligence-cti-analysis).
 - MITRE ATT&CK framework for threat intelligence standardization
 - spaCy for NLP capabilities
 - NetworkX for graph analysis
